@@ -186,7 +186,15 @@ export default function ChatBot() {
                             ? "bg-primary text-white rounded-tr-none" 
                             : "bg-white/5 text-white/80 border border-white/10 rounded-tl-none"
                         }`}>
-                          {msg.text}
+                          {typeof msg.text === 'object' ? (
+                            <div className="space-y-1">
+                              {Object.entries(msg.text).map(([key, val]) => (
+                                <p key={key}><span className="font-bold uppercase text-[10px] opacity-50">{key}:</span> {String(val)}</p>
+                              ))}
+                            </div>
+                          ) : (
+                            msg.text
+                          )}
                           
                           {msg.stockData && (
                             <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/10 space-y-1">

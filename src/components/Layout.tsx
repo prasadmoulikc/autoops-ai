@@ -33,33 +33,8 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResult, setSearchResult] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
   const location = useLocation();
-  const searchRef = useRef<HTMLDivElement>(null);
   const { userData } = useFinance();
-
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    setShowResults(true);
-    setSearchResult(null);
-    try {
-      const data = await searchAI(searchQuery);
-      setSearchResult(data);
-    } catch (error) {
-      console.error("Search failed:", error);
-      setSearchResult({
-        error: "Something went wrong with the AI analysis. Please try again."
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
   const navItems = [
     { name: "Overview", path: "/dashboard", icon: LayoutDashboard },
@@ -68,16 +43,6 @@ export default function Layout({ children }: LayoutProps) {
     { name: "AI Insights", path: "/insights", icon: Zap },
     { name: "Settings", path: "/settings", icon: Settings },
   ];
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col text-white relative bg-[#020617] overflow-hidden">
@@ -119,110 +84,6 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <div className="flex items-center gap-6 justify-end flex-1">
-          {/* Premium Search Bar */}
-          <div className="relative hidden lg:block w-full max-w-xs" ref={searchRef}>
-            <form onSubmit={handleSearch} className="relative group">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search AI Intelligence..." 
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-11 pr-12 text-xs font-bold focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20 placeholder:font-medium"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] font-black text-white/20 pointer-events-none">
-                <span>⌘</span>
-                <span>K</span>
-              </div>
-              {isSearching && <Loader2 size={14} className="absolute right-12 top-1/2 -translate-y-1/2 animate-spin text-primary" />}
-            </form>
-            
-            {/* Search Results Dropdown */}
-            <AnimatePresence>
-              {showResults && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full right-0 mt-3 w-[400px] glass-card p-6 z-50 shadow-2xl border-white/10"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <BrainCircuit size={16} className="text-primary" />
-                      <h4 className="text-xs font-black uppercase tracking-widest text-white">AI Financial Analysis</h4>
-                    </div>
-                    <button onClick={() => setShowResults(false)} className="text-white/40 hover:text-white">
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  {isSearching ? (
-                    <div className="flex flex-col items-center py-8 gap-4">
-                      <Loader2 size={32} className="animate-spin text-primary" />
-                      <p className="text-sm text-white/40 animate-pulse">Processing financial query...</p>
-                    </div>
-                  ) : searchResult?.error ? (
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                      <AlertCircle size={18} className="text-red-400 shrink-0" />
-                      <p className="text-sm font-medium text-red-400">{searchResult.error}</p>
-                    </div>
-                  ) : searchResult ? (
-                    <div className="space-y-4">
-                      {searchResult.stockData && (
-                        <div className="space-y-3">
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <div className="flex items-center justify-between mb-2">
-                              <h2 className="text-lg font-black text-white uppercase tracking-tight">{searchResult.company || searchResult.stockData.symbol}</h2>
-                              <div className={`flex items-center gap-1 text-sm font-black ${searchResult.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                                {searchResult.stockData.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                {Math.abs(searchResult.stockData.change)}%
-                              </div>
-                            </div>
-                            <p className="text-2xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                              <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1">Market Cap</p>
-                              <p className="text-xs font-bold text-white">{searchResult.stockData.marketCap || "N/A"}</p>
-                            </div>
-                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                              <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1">P/E Ratio</p>
-                              <p className="text-xs font-bold text-white">{searchResult.stockData.peRatio || "N/A"}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Insights</p>
-                        <p className="text-sm leading-relaxed text-white/80">{searchResult.analysis}</p>
-                      </div>
-
-                      {searchResult.prediction && (
-                        <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                          <p className="text-[10px] font-bold text-primary uppercase mb-2">Prediction</p>
-                          <p className="text-sm text-white/90 italic">"{searchResult.prediction}"</p>
-                        </div>
-                      )}
-
-                      <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Recommendation</p>
-                          <p className="text-sm font-black text-primary uppercase tracking-widest">{searchResult.recommendation || "HOLD"}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Confidence</p>
-                          <p className="text-sm font-black text-white">{searchResult.confidence || "85"}%</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
           <div className="flex items-center gap-3">
             <button className="relative p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-colors">
               <Bell size={20} />

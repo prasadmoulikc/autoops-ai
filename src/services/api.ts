@@ -53,112 +53,111 @@ export const analyzeFinance = async (data: any) => {
   }
 };
 
-export const searchAI = async (query: string) => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj";
-
-  // Simulation Logic for Stock and Financial Search
-  const simulateAI = (q: string) => {
-    const lowerQuery = q.toLowerCase();
+const simulateAI = (q: string) => {
+  const lowerQuery = q.toLowerCase();
+  
+  // Stock Search Mode
+  if (lowerQuery.includes("birla") || lowerQuery.includes("tcs") || lowerQuery.includes("reliance") || lowerQuery.includes("hdfc") || lowerQuery.includes("infosys") || lowerQuery.includes("wipro") || lowerQuery.includes("stock") || lowerQuery.includes("share")) {
+    let company = "Reliance Industries Ltd";
+    let price = 2985.40;
+    let change = 12.50;
+    let cap = "20.2L Cr";
+    let pe = 28.4;
     
-    // Stock Search Mode
-    if (lowerQuery.includes("birla") || lowerQuery.includes("tcs") || lowerQuery.includes("reliance") || lowerQuery.includes("hdfc") || lowerQuery.includes("infosys") || lowerQuery.includes("wipro") || lowerQuery.includes("stock") || lowerQuery.includes("share")) {
-      let company = "Reliance Industries Ltd";
-      let price = 2985.40;
-      let change = 12.50;
-      let cap = "20.2L Cr";
-      let pe = 28.4;
-      
-      if (lowerQuery.includes("birla")) {
-        company = "UltraTech Cement (Aditya Birla Group)";
-        price = 10540.00;
-        change = 145.20;
-        cap = "3.05L Cr";
-        pe = 42.1;
-      } else if (lowerQuery.includes("tcs")) {
-        company = "Tata Consultancy Services";
-        price = 4150.25;
-        change = -22.40;
-        cap = "15.1L Cr";
-        pe = 31.2;
-      } else if (lowerQuery.includes("infosys")) {
-        company = "Infosys Ltd";
-        price = 1680.50;
-        change = 5.30;
-        cap = "6.9L Cr";
-        pe = 25.8;
-      } else if (lowerQuery.includes("hdfc")) {
-        company = "HDFC Bank Ltd";
-        price = 1420.15;
-        change = -1.20;
-        cap = "10.8L Cr";
-        pe = 18.5;
-      }
-
-      return {
-        type: "stock",
-        company,
-        stockData: {
-          price,
-          change,
-          changePercent: Number(((change/price)*100).toFixed(2)),
-          marketCap: cap,
-          peRatio: pe
-        },
-        analysis: [
-          `Current RSI is ${change > 0 ? '62 (Slightly Overbought)' : '45 (Neutral)'}.`,
-          "Institutional holding (FII/DII) has increased by 1.2% this quarter.",
-          "Strong support level identified at ₹" + (price * 0.95).toFixed(0) + "."
-        ],
-        prediction: {
-          shortTerm: change > 0 ? "Bullish" : change < 0 ? "Bearish" : "Neutral",
-          longTerm: "Strong Buy"
-        },
-        recommendation: change > 0 ? "Accumulate" : change < 0 ? "Wait" : "Hold",
-        confidence: "High",
-        reason: "Market sentiment is positive following recent quarterly earnings and sector-wide recovery."
-      };
+    if (lowerQuery.includes("birla")) {
+      company = "UltraTech Cement (Aditya Birla Group)";
+      price = 10540.00;
+      change = 145.20;
+      cap = "3.05L Cr";
+      pe = 42.1;
+    } else if (lowerQuery.includes("tcs")) {
+      company = "Tata Consultancy Services";
+      price = 4150.25;
+      change = -22.40;
+      cap = "15.1L Cr";
+      pe = 31.2;
+    } else if (lowerQuery.includes("infosys")) {
+      company = "Infosys Ltd";
+      price = 1680.50;
+      change = 5.30;
+      cap = "6.9L Cr";
+      pe = 25.8;
+    } else if (lowerQuery.includes("hdfc")) {
+      company = "HDFC Bank Ltd";
+      price = 1420.15;
+      change = -1.20;
+      cap = "10.8L Cr";
+      pe = 18.5;
     }
 
-    // Financial Mode
-    if (lowerQuery.includes("income") || lowerQuery.includes("tax") || lowerQuery.includes("expense") || lowerQuery.includes("save") || lowerQuery.includes("profit") || lowerQuery.includes("gst")) {
-      return {
-        type: "finance",
-        company: "Financial Intelligence Unit",
-        stockData: null,
-        analysis: [
-          "Under the New Tax Regime (FY 2024-25), income up to ₹7L is tax-free via rebate.",
-          "Standard deduction has been increased to ₹75,000 for salaried individuals.",
-          "GST Input Tax Credit (ITC) can be claimed on all business-related capital goods."
-        ],
-        prediction: {
-          shortTerm: "Optimistic",
-          longTerm: "Growth"
-        },
-        recommendation: "Plan Tax Early",
-        confidence: "Very High",
-        reason: "Recent budget changes favor the new regime for middle-income earners."
-      };
-    }
-
-    // General Search
     return {
-      type: "general",
-      company: "AutoOps Knowledge Base",
-      stockData: null,
+      type: "stock",
+      company,
+      stockData: {
+        price,
+        change,
+        changePercent: Number(((change/price)*100).toFixed(2)),
+        marketCap: cap,
+        peRatio: pe
+      },
       analysis: [
-        "Global markets are showing signs of recovery after recent inflation data.",
-        "Indian startup ecosystem is seeing renewed interest from VC firms.",
-        "Digital transformation remains the top priority for Indian SMEs."
+        `Current RSI is ${change > 0 ? '62 (Slightly Overbought)' : '45 (Neutral)'}.`,
+        "Institutional holding (FII/DII) has increased by 1.2% this quarter.",
+        "Strong support level identified at ₹" + (price * 0.95).toFixed(0) + "."
       ],
       prediction: {
-        shortTerm: "Neutral",
-        longTerm: "Stable"
+        shortTerm: change > 0 ? "Bullish" : change < 0 ? "Bearish" : "Neutral",
+        longTerm: "Strong Buy"
       },
-      recommendation: "Hold",
-      confidence: "Medium",
-      reason: "Macroeconomic factors are currently in a transition phase."
+      recommendation: change > 0 ? "Accumulate" : change < 0 ? "Wait" : "Hold",
+      confidence: "High",
+      reason: "Market sentiment is positive following recent quarterly earnings and sector-wide recovery."
     };
+  }
+
+  // Financial Mode
+  if (lowerQuery.includes("income") || lowerQuery.includes("tax") || lowerQuery.includes("expense") || lowerQuery.includes("save") || lowerQuery.includes("profit") || lowerQuery.includes("gst")) {
+    return {
+      type: "finance",
+      company: "Financial Intelligence Unit",
+      stockData: null,
+      analysis: [
+        "Under the New Tax Regime (FY 2024-25), income up to ₹7L is tax-free via rebate.",
+        "Standard deduction has been increased to ₹75,000 for salaried individuals.",
+        "GST Input Tax Credit (ITC) can be claimed on all business-related capital goods."
+      ],
+      prediction: {
+        shortTerm: "Optimistic",
+        longTerm: "Growth"
+      },
+      recommendation: "Plan Tax Early",
+      confidence: "Very High",
+      reason: "Recent budget changes favor the new regime for middle-income earners."
+    };
+  }
+
+  // General Search
+  return {
+    type: "general",
+    company: "AutoOps AI",
+    stockData: null,
+    analysis: [
+      "Global markets are showing signs of recovery after recent inflation data.",
+      "Indian startup ecosystem is seeing renewed interest from VC firms.",
+      "Digital transformation remains the top priority for Indian SMEs."
+    ],
+    prediction: {
+      shortTerm: "Neutral",
+      longTerm: "Stable"
+    },
+    recommendation: "Hold",
+    confidence: "Medium",
+    reason: "Macroeconomic factors are currently in a transition phase."
   };
+};
+
+export const searchAI = async (query: string) => {
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj";
 
   if (!webhookUrl || webhookUrl === "YOUR_N8N_WEBHOOK_URL") {
     console.warn("AI Webhook not configured. Using simulated AI search.");
@@ -171,11 +170,7 @@ export const searchAI = async (query: string) => {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ 
-        type: "search",
-        chatInput: query, // Common n8n chat input field
-        query 
-      })
+      body: JSON.stringify({ query })
     });
 
     if (!res.ok) throw new Error("Search request failed");
@@ -199,28 +194,20 @@ export const searchAI = async (query: string) => {
       }
     }
 
-    // Helper to ensure analysis is a string or array of strings
-    const formatAnalysis = (val: any) => {
-      if (typeof val === "string") return val;
-      if (Array.isArray(val)) return val.map(v => typeof v === "object" ? JSON.stringify(v) : v);
-      if (typeof val === "object") return JSON.stringify(val);
-      return String(val);
-    };
-
     // If the response looks like direct stock data (as implied by user snippet)
-    if (responseData.price !== undefined || responseData.symbol !== undefined || responseData.stockPrice !== undefined || responseData.type === 'stock') {
+    if (responseData.price !== undefined || responseData.symbol !== undefined || responseData.stockData || responseData.type === 'stock') {
       return {
         type: "stock",
         company: responseData.company || responseData.name || "Company",
-        stockData: {
+        stockData: responseData.stockData || {
           price: responseData.price || responseData.stockPrice || 0,
           change: responseData.change || responseData.stockChange || 0,
           symbol: responseData.symbol || responseData.ticker || "STOCK",
           marketCap: responseData.marketCap || "N/A",
           peRatio: responseData.peRatio || 0
         },
-        analysis: formatAnalysis(responseData.analysis || responseData.description || "Stock analysis provided by AI."),
-        prediction: typeof responseData.prediction === "object" ? JSON.stringify(responseData.prediction) : (responseData.prediction || "Neutral"),
+        analysis: responseData.analysis || responseData.description || "Stock analysis provided by AI.",
+        prediction: responseData.prediction || "Neutral",
         recommendation: responseData.recommendation || "Hold",
         confidence: responseData.confidence || 85,
         reason: responseData.reason || "Based on current market data."
@@ -232,7 +219,7 @@ export const searchAI = async (query: string) => {
       return {
         type: "general",
         company: "AutoOps AI",
-        analysis: formatAnalysis(responseData.output || responseData.text || responseData),
+        analysis: responseData.output || responseData.text || responseData,
         prediction: { shortTerm: "Neutral", longTerm: "Stable" },
         recommendation: "Hold",
         confidence: "High",

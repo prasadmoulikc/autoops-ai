@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,7 +17,11 @@ import {
   ArrowDownRight,
   Activity,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Search,
+  BrainCircuit,
+  X,
+  Target
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import { analyzeFinance } from "../services/api";
@@ -33,12 +37,58 @@ import {
   AreaChart,
   Area
 } from "recharts";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Dashboard() {
   const { userData, analysis: localAnalysis, suggestions: localSuggestions, alerts: localAlerts } = useFinance();
   const [apiData, setApiData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Search State
+  const [query, setQuery] = useState("");
+  const [stockData, setStockData] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const STOCKS = ["RELIANCE", "TCS", "INFY", "HDFC", "WIPRO", "BIRLA", "ADANI", "TATA", "ICICI"];
+  const filteredStocks = STOCKS.filter(s => 
+    query.length > 0 && s.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const handleSearch = async (queryToSearch?: string) => {
+    const searchVal = typeof queryToSearch === 'string' ? queryToSearch : query;
+    if (!searchVal.trim()) return;
+
+    if (typeof queryToSearch === 'string') {
+      setQuery(queryToSearch);
+    }
+
+    setIsSearching(true);
+    setShowSuggestions(false);
+    try {
+      const res = await fetch("https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: searchVal }),
+      });
+
+      const data = await res.json();
+      console.log("DATA:", data);
+
+      const parsed = typeof data.output === "string"
+        ? JSON.parse(data.output)
+        : data;
+
+      setStockData(parsed);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,6 +113,16 @@ export default function Dashboard() {
 
     fetchData();
   }, [userData]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const displayData = {
     totalIncome: apiData?.totalIncome ?? localAnalysis?.totalIncome ?? 0,
@@ -125,19 +185,166 @@ export default function Dashboard() {
             Intelligent financial management for <span className="text-white font-bold">Modern Enterprise</span>
           </motion.p>
         </div>
-        <motion.div variants={itemVariants} className="flex items-center gap-3">
-          <div className="glass-card px-4 py-2 flex items-center gap-3 border-primary/20 bg-primary/5">
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin" />
-            ) : (
-              <Activity className="w-4 h-4 text-primary animate-pulse-soft" />
-            )}
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-              {isLoading ? "AI Analyzing..." : "AI Sync Active"}
-            </span>
+        
+        <motion.div variants={itemVariants} className="flex flex-col md:items-end gap-4">
+          {/* Search Bar in Dashboard */}
+          <div className="relative w-full max-w-md" ref={searchRef}>
+            <div className="relative group">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" />
+              <input 
+                type="text" 
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Search stock (RELIANCE)" 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-12 text-sm font-bold focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20"
+              />
+              <button 
+                onClick={() => handleSearch()}
+                disabled={isSearching}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+              >
+                {isSearching ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+              </button>
+            </div>
+
+            {/* Autosuggest Dropdown */}
+            <AnimatePresence>
+              {showSuggestions && filteredStocks.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 right-0 mt-2 glass-card overflow-hidden z-[60] border-white/10 shadow-2xl"
+                >
+                  {filteredStocks.map((stock, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSearch(stock)}
+                      className="w-full text-left px-4 py-3 text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                    >
+                      <TrendingUp size={16} className="text-primary" />
+                      {stock}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="glass-card px-4 py-2 flex items-center gap-3 border-primary/20 bg-primary/5">
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              ) : (
+                <Activity className="w-4 h-4 text-primary animate-pulse-soft" />
+              )}
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                {isLoading ? "AI Analyzing..." : "AI Sync Active"}
+              </span>
+            </div>
           </div>
         </motion.div>
       </header>
+
+      {/* AI Stock Search Result Display */}
+      <AnimatePresence>
+        {stockData && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="glass-card p-8 border-primary/20 bg-primary/5 relative group">
+              <button 
+                onClick={() => setStockData(null)}
+                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                    <BrainCircuit size={32} className="text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">{stockData.company}</h2>
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">AI Intelligence Report</p>
+                  </div>
+                </div>
+                
+                {stockData.stockData && (
+                  <div className="flex items-center gap-8">
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Current Price</p>
+                      <p className="text-3xl font-black text-white">₹{stockData.stockData.price.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">24h Change</p>
+                      <div className={`flex items-center justify-end gap-1 text-xl font-black ${stockData.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {stockData.stockData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                        {Math.abs(stockData.stockData.change)}%
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-6">
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Sparkles size={14} /> AI Analysis
+                    </h4>
+                    <p className="text-sm leading-relaxed text-white/80">{stockData.analysis?.shortTerm || stockData.analysis}</p>
+                  </div>
+                  
+                  {stockData.analysis?.longTerm && (
+                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                      <h4 className="text-[10px] font-black text-accent uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Target size={14} /> Long Term Outlook
+                      </h4>
+                      <p className="text-sm leading-relaxed text-white/80">{stockData.analysis.longTerm}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-6">
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">Recommendation</p>
+                    <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl ${
+                      stockData.recommendation?.toLowerCase().includes('buy') ? 'bg-success/20 text-success border border-success/20' :
+                      stockData.recommendation?.toLowerCase().includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
+                      'bg-accent/20 text-accent border border-accent/20'
+                    }`}>
+                      {stockData.recommendation}
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Confidence</p>
+                      <span className="text-sm font-black text-white">{stockData.confidence || 85}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stockData.confidence || 85}%` }}
+                        className="h-full bg-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Financial Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
