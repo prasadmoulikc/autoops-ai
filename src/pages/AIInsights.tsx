@@ -33,47 +33,60 @@ import { motion, AnimatePresence } from "motion/react";
 export default function AIInsights() {
   const { suggestions: localSuggestions, alerts, analysis } = useFinance();
   
-  // Search State
+  // Production State Management
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [stockData, setStockData] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const STOCKS = ["RELIANCE", "TCS", "INFY", "HDFC", "WIPRO", "BIRLA", "ADANI", "TATA", "ICICI"];
-  const filteredStocks = STOCKS.filter(s => 
-    query.length > 0 && s.toLowerCase().includes(query.toLowerCase())
-  );
+  
+  // Debounce logic for autocomplete
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const filteredStocks = useMemo(() => {
+    return STOCKS.filter(s => 
+      debouncedQuery.length > 0 && s.toLowerCase().includes(debouncedQuery.toLowerCase())
+    );
+  }, [debouncedQuery]);
 
   const handleSearch = async (stockName?: string) => {
     const searchVal = stockName || query;
-    if (!searchVal.trim()) return;
+    if (!searchVal.trim() || isSearching) return;
 
     setQuery(searchVal);
     setIsSearching(true);
+    setError(null);
     setShowSuggestions(false);
     setSelectedIndex(-1);
 
     try {
       const res = await fetch("https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: searchVal }),
       });
 
+      if (!res.ok) throw new Error("Network response was not ok");
+      
       const data = await res.json();
-
-      // Handle nested JSON in output field if present
-      const parsed = typeof data.output === "string"
-        ? JSON.parse(data.output)
-        : data;
+      const parsed = typeof data.output === "string" ? JSON.parse(data.output) : data;
+      
+      if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) {
+        throw new Error("No data found for this query");
+      }
 
       setStockData(parsed);
-    } catch (err) {
-      console.error("Search failed:", err);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch stock intelligence. Please try again.");
+      console.error("Search error:", err);
     } finally {
       setIsSearching(false);
     }
@@ -122,12 +135,7 @@ export default function AIInsights() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const itemVariants = {
@@ -216,6 +224,24 @@ export default function AIInsights() {
         </motion.div>
       </header>
 
+      {/* Error Display */}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="p-4 rounded-2xl bg-danger/10 border border-danger/20 flex items-center gap-3 text-danger"
+          >
+            <AlertCircle size={20} />
+            <p className="text-sm font-bold">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-danger/10 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Quick Search Suggestions */}
       <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
         {["RELIANCE", "INFY", "WIPRO"].map((stock) => (
@@ -252,22 +278,22 @@ export default function AIInsights() {
                     <BrainCircuit size={32} className="text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">{stockData.company}</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">{stockData?.company}</h2>
                     <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">AI Intelligence Report</p>
                   </div>
                 </div>
                 
-                {stockData.stockData && (
+                {stockData?.stockData && (
                   <div className="flex items-center gap-8">
                     <div className="text-right">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Current Price</p>
-                      <p className="text-3xl font-black text-white">₹{stockData.stockData.price.toLocaleString()}</p>
+                      <p className="text-3xl font-black text-white">₹{stockData?.stockData?.price?.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">24h Change</p>
-                      <div className={`flex items-center justify-end gap-1 text-xl font-black ${stockData.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {stockData.stockData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                        {Math.abs(stockData.stockData.change)}%
+                      <div className={`flex items-center justify-end gap-1 text-xl font-black ${stockData?.stockData?.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {stockData?.stockData?.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                        {Math.abs(stockData?.stockData?.change)}%
                       </div>
                     </div>
                   </div>
@@ -280,15 +306,15 @@ export default function AIInsights() {
                     <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-4 flex items-center gap-2">
                       <Sparkles size={14} /> AI Analysis
                     </h4>
-                    <p className="text-sm leading-relaxed text-white/80">{stockData.analysis?.shortTerm || stockData.analysis}</p>
+                    <p className="text-sm leading-relaxed text-white/80">{stockData?.analysis?.shortTerm || stockData?.analysis}</p>
                   </div>
                   
-                  {stockData.analysis?.longTerm && (
+                  {stockData?.analysis?.longTerm && (
                     <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                       <h4 className="text-[10px] font-black text-accent uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Target size={14} /> Long Term Outlook
                       </h4>
-                      <p className="text-sm leading-relaxed text-white/80">{stockData.analysis.longTerm}</p>
+                      <p className="text-sm leading-relaxed text-white/80">{stockData?.analysis?.longTerm}</p>
                     </div>
                   )}
                 </div>
@@ -297,23 +323,23 @@ export default function AIInsights() {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">Recommendation</p>
                     <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl ${
-                      stockData.recommendation?.toLowerCase().includes('buy') ? 'bg-success/20 text-success border border-success/20' :
-                      stockData.recommendation?.toLowerCase().includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
+                      stockData?.recommendation?.toLowerCase()?.includes('buy') ? 'bg-success/20 text-success border border-success/20' :
+                      stockData?.recommendation?.toLowerCase()?.includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
                       'bg-accent/20 text-accent border border-accent/20'
                     }`}>
-                      {stockData.recommendation}
+                      {stockData?.recommendation}
                     </div>
                   </div>
 
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Confidence</p>
-                      <span className="text-sm font-black text-white">{stockData.confidence || 85}%</span>
+                      <span className="text-sm font-black text-white">{stockData?.confidence || 85}%</span>
                     </div>
                     <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${stockData.confidence || 85}%` }}
+                        animate={{ width: `${stockData?.confidence || 85}%` }}
                         className="h-full bg-primary"
                       />
                     </div>
@@ -326,9 +352,7 @@ export default function AIInsights() {
       </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Insights Grid */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Revenue Forecast Chart */}
           <motion.div variants={itemVariants} className="glass-card p-8 relative overflow-hidden group">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
               <div className="flex items-center gap-4">
@@ -366,27 +390,10 @@ export default function AIInsights() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 800 }} 
-                    dy={15}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 800 }}
-                    tickFormatter={(value) => `₹${value/1000}k`}
-                  />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 800 }} dy={15} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 800 }} tickFormatter={(v) => `₹${v/1000}k`} />
                   <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)', 
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255,255,255,0.1)', 
-                      borderRadius: '16px',
-                      padding: '12px 16px'
-                    }}
+                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '12px 16px' }}
                     itemStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }}
                     labelStyle={{ fontSize: '12px', fontWeight: '900', marginBottom: '8px', color: 'white' }}
                   />
@@ -397,15 +404,9 @@ export default function AIInsights() {
             </div>
           </motion.div>
 
-          {/* Suggestions Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {localSuggestions.map((text, idx) => (
-              <motion.div 
-                key={idx} 
-                variants={itemVariants}
-                whileHover={{ y: -5, x: 5 }}
-                className="glass-card p-6 border-white/5 hover:border-primary/30 transition-all group cursor-pointer"
-              >
+              <motion.div key={idx} variants={itemVariants} whileHover={{ y: -5, x: 5 }} className="glass-card p-6 border-white/5 hover:border-primary/30 transition-all group cursor-pointer">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Lightbulb size={20} className="text-primary" />
@@ -423,9 +424,7 @@ export default function AIInsights() {
           </div>
         </div>
 
-        {/* Sidebar Insights */}
         <motion.div variants={itemVariants} className="space-y-8">
-          {/* Critical Alerts */}
           <div className="glass-card p-8 bg-gradient-to-br from-danger/10 to-transparent border-danger/20">
             <div className="flex items-center gap-4 mb-8">
               <div className="w-12 h-12 rounded-2xl bg-danger/10 flex items-center justify-center">
@@ -442,7 +441,6 @@ export default function AIInsights() {
             </div>
           </div>
 
-          {/* Strategic Goals */}
           <div className="glass-card p-8">
             <div className="flex items-center gap-4 mb-8">
               <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
@@ -462,19 +460,13 @@ export default function AIInsights() {
                     <span className="text-xs font-black text-white">{goal.progress}%</span>
                   </div>
                   <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-0.5">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${goal.progress}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      className={`h-full ${goal.color} rounded-full shadow-[0_0_10px_rgba(255,255,255,0.1)]`} 
-                    />
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${goal.progress}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full ${goal.color} rounded-full shadow-[0_0_10px_rgba(255,255,255,0.1)]`} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* AI Confidence */}
           <div className="glass-card p-8 text-center relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
@@ -483,9 +475,7 @@ export default function AIInsights() {
               </div>
               <h3 className="text-xl font-black uppercase tracking-tight mb-2">Model Confidence</h3>
               <p className="text-5xl font-black text-white mb-4">99.4%</p>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-relaxed">
-                Based on <span className="text-white">Deep Learning</span> analysis of historical data.
-              </p>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-relaxed">Based on <span className="text-white">Deep Learning</span> analysis of historical data.</p>
             </div>
           </div>
         </motion.div>

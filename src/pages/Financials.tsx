@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -33,6 +33,16 @@ import { motion } from "motion/react";
 
 export default function Financials() {
   const { userData, analysis } = useFinance();
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredTransactions = useMemo(() => {
+    if (!userData?.transactions) return [];
+    return userData.transactions.filter(t => 
+      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [userData?.transactions, searchTerm]);
 
   const chartData = useMemo(() => {
     if (!userData?.transactions) return [];
@@ -275,6 +285,8 @@ export default function Financials() {
               <input 
                 type="text" 
                 placeholder="SEARCH TRANSACTIONS..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-white/5 border border-white/10 rounded-full py-3 pl-12 pr-6 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all w-full sm:w-64"
               />
             </div>
@@ -291,7 +303,7 @@ export default function Financials() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {userData?.transactions.slice(0, 8).map((t, idx) => (
+                {filteredTransactions.slice(0, 8).map((t, idx) => (
                   <tr key={idx} className="group hover:bg-white/5 transition-colors">
                     <td className="py-5 text-xs font-bold text-white/40">{t.date}</td>
                     <td className="py-5 text-sm font-black text-white">{t.description}</td>

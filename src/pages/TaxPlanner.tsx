@@ -25,7 +25,7 @@ import {
 import { motion } from "motion/react";
 
 export default function TaxPlanner() {
-  const { analysis, userData } = useFinance();
+  const { analysis, userData, suggestions } = useFinance();
 
   const taxBreakdown = useMemo(() => {
     const totalTax = analysis?.estimatedTax || 0;
@@ -35,6 +35,18 @@ export default function TaxPlanner() {
       { name: "Income Tax", value: Math.floor(totalTax * 0.8) },
       { name: "Cess (4%)", value: Math.floor(totalTax * 0.15) },
       { name: "Surcharge", value: Math.floor(totalTax * 0.05) },
+    ];
+  }, [analysis]);
+
+  const taxSlabs = useMemo(() => {
+    const income = analysis?.profit || 0;
+    return [
+      { slab: "₹0 - ₹3L", rate: "0%", status: income <= 300000 ? "Active" : "Exempt" },
+      { slab: "₹3L - ₹6L", rate: "5%", status: income > 300000 && income <= 600000 ? "Active" : income > 600000 ? "Exempt" : "Upcoming" },
+      { slab: "₹6L - ₹9L", rate: "10%", status: income > 600000 && income <= 900000 ? "Active" : income > 900000 ? "Exempt" : "Upcoming" },
+      { slab: "₹9L - ₹12L", rate: "15%", status: income > 900000 && income <= 1200000 ? "Active" : income > 1200000 ? "Exempt" : "Upcoming" },
+      { slab: "₹12L - ₹15L", rate: "20%", status: income > 1200000 && income <= 1500000 ? "Active" : income > 1500000 ? "Exempt" : "Upcoming" },
+      { slab: "Above ₹15L", rate: "30%", status: income > 1500000 ? "Active" : "Upcoming" },
     ];
   }, [analysis]);
 
@@ -126,12 +138,7 @@ export default function TaxPlanner() {
               <h2 className="text-xl font-black uppercase tracking-tight">Slab Breakdown</h2>
             </div>
             <div className="space-y-4">
-              {[
-                { slab: "₹0 - ₹3L", rate: "0%", status: "Exempt" },
-                { slab: "₹3L - ₹6L", rate: "5%", status: "Active" },
-                { slab: "₹6L - ₹9L", rate: "10%", status: "Active" },
-                { slab: "₹9L - ₹12L", rate: "15%", status: "Upcoming" },
-              ].map((item) => (
+              {taxSlabs.map((item) => (
                 <div key={item.slab} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
                   <div className="flex items-center gap-4">
                     <div className={`w-2 h-2 rounded-full ${item.status === 'Exempt' ? 'bg-success' : item.status === 'Active' ? 'bg-primary' : 'bg-white/20'}`} />
@@ -204,16 +211,13 @@ export default function TaxPlanner() {
               <h2 className="text-xl font-black uppercase tracking-tight">Optimization</h2>
             </div>
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer">
-                <p className="text-sm font-bold text-white/80 leading-relaxed">
-                  Switching to the <span className="text-primary">New Tax Regime</span> is currently optimal for your income bracket.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer">
-                <p className="text-sm font-bold text-white/80 leading-relaxed">
-                  Ensure all <span className="text-primary">Business Expenses</span> are correctly categorized to maximize deductions.
-                </p>
-              </div>
+              {suggestions?.map((suggestion, idx) => (
+                <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer">
+                  <p className="text-sm font-bold text-white/80 leading-relaxed">
+                    {suggestion}
+                  </p>
+                </div>
+              ))}
             </div>
             <button className="w-full mt-8 py-4 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary/80 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]">
               Download Tax Guide
