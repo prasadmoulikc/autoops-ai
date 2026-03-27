@@ -9,7 +9,9 @@ import {
   Maximize2, 
   Minimize2,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { searchAI } from "../services/api";
@@ -19,6 +21,11 @@ interface Message {
   text: string;
   sender: "user" | "ai";
   timestamp: Date;
+  stockData?: {
+    symbol: string;
+    price: number;
+    change: number;
+  };
 }
 
 export default function ChatBot() {
@@ -63,15 +70,28 @@ export default function ChatBot() {
       const response = await searchAI(input);
       
       let aiText = "I'm sorry, I couldn't process that request.";
+      let stockData = undefined;
+
       if (response) {
         if (typeof response === "string") {
           aiText = response;
-        } else if (response.analysis && Array.isArray(response.analysis)) {
-          aiText = response.analysis[0];
-        } else if (response.output) {
-          aiText = response.output;
-        } else if (response.message) {
-          aiText = response.message;
+        } else {
+          if (response.type === "stock" && response.stockData) {
+            stockData = {
+              symbol: response.stockData.symbol,
+              price: response.stockData.price,
+              change: response.stockData.change
+            };
+            aiText = response.analysis || `Here is the latest data for ${response.company || response.stockData.symbol}.`;
+          } else if (response.analysis && Array.isArray(response.analysis)) {
+            aiText = response.analysis[0];
+          } else if (response.analysis && typeof response.analysis === "string") {
+            aiText = response.analysis;
+          } else if (response.output) {
+            aiText = response.output;
+          } else if (response.message) {
+            aiText = response.message;
+          }
         }
       }
 
@@ -80,6 +100,7 @@ export default function ChatBot() {
         text: aiText,
         sender: "ai",
         timestamp: new Date(),
+        stockData
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -166,6 +187,20 @@ export default function ChatBot() {
                             : "bg-white/5 text-white/80 border border-white/10 rounded-tl-none"
                         }`}>
                           {msg.text}
+                          
+                          {msg.stockData && (
+                            <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/10 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{msg.stockData.symbol}</span>
+                                <div className={`flex items-center gap-1 text-[10px] font-black ${msg.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                                  {msg.stockData.change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                  {Math.abs(msg.stockData.change)}%
+                                </div>
+                              </div>
+                              <p className="text-sm font-black text-white">₹{msg.stockData.price.toLocaleString()}</p>
+                            </div>
+                          )}
+
                           <div className={`text-[8px] mt-1 opacity-40 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                             {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>

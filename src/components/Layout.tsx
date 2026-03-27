@@ -169,14 +169,27 @@ export default function Layout({ children }: LayoutProps) {
                   ) : searchResult ? (
                     <div className="space-y-4">
                       {searchResult.stockData && (
-                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">{searchResult.stockData.symbol || 'STOCK'}</p>
-                            <p className="text-2xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">{searchResult.stockData.symbol || 'STOCK'}</p>
+                              <p className="text-2xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
+                            </div>
+                            <div className={`flex items-center gap-2 text-lg font-black ${searchResult.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                              {searchResult.stockData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                              {Math.abs(searchResult.stockData.change)}%
+                            </div>
                           </div>
-                          <div className={`flex items-center gap-2 text-lg font-black ${searchResult.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {searchResult.stockData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                            {Math.abs(searchResult.stockData.change)}%
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                              <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1">Market Cap</p>
+                              <p className="text-xs font-bold text-white">{searchResult.stockData.marketCap || "N/A"}</p>
+                            </div>
+                            <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                              <p className="text-[8px] font-black uppercase tracking-widest text-white/20 mb-1">P/E Ratio</p>
+                              <p className="text-xs font-bold text-white">{searchResult.stockData.peRatio || "N/A"}</p>
+                            </div>
                           </div>
                         </div>
                       )}
