@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "preferences": { "type": "object" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "gstApplicable": { "type": "boolean" },
+        "gstAmount": { "type": "number" }
+      },
+      "required": ["userId", "amount", "type", "date"]
+    },
+    "AgentTask": {
+      "title": "AgentTask",
+      "description": "Task executed or planned by the AI agent",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["planned", "executing", "completed", "failed"] },
+        "plan": { "type": "array", "items": { "type": "string" } },
+        "executionLog": { "type": "array", "items": { "type": "object" } },
+        "result": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "status"]
+    },
+    "AgentMemory": {
+      "title": "AgentMemory",
+      "description": "Learned patterns and skills for the user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["pattern", "skill", "preference"] },
+        "content": { "type": "string" },
+        "confidence": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User's financial transactions"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "AgentTask",
+      "description": "Agent execution history"
+    },
+    "/users/{userId}/memory/{memoryId}": {
+      "schema": "AgentMemory",
+      "description": "Agent's learned knowledge about the user"
+    }
+  }
+}
