@@ -27,13 +27,25 @@ const DEMO_DATA: UserData = {
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userData, setUserData] = useState<UserData>(() => {
-    const saved = localStorage.getItem("userData");
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem("userData");
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error("Failed to parse userData from localStorage:", error);
+      return null;
+    }
   });
 
   const [isFirstTime, setIsFirstTime] = useState(!userData);
 
-  const activeData = userData || DEMO_DATA;
+  const activeData = useMemo(() => {
+    const base = userData || DEMO_DATA;
+    return {
+      ...DEMO_DATA,
+      ...base,
+      transactions: base.transactions || []
+    };
+  }, [userData]);
 
   const analysis = useMemo(() => analyzeFinance(activeData), [activeData]);
   const suggestions = useMemo(() => getTaxSuggestions(activeData, analysis), [activeData, analysis]);

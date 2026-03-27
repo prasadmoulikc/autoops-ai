@@ -30,7 +30,7 @@ export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [searchResult, setSearchResult] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -38,10 +38,11 @@ export default function Layout({ children }: LayoutProps) {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
+    setSearchResult(null);
     try {
       const data = await searchAI(searchQuery);
-      if (data && data.insights) {
-        setSearchResults(data.insights);
+      if (data) {
+        setSearchResult(data);
       }
     } catch (error) {
       console.error("Search failed:", error);
@@ -157,20 +158,64 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             {/* Search Results Dropdown */}
-            {searchResults.length > 0 && (
-              <div className="absolute top-full right-0 mt-2 w-96 glass-card p-4 z-50 animate-in fade-in slide-in-from-top-2">
+            {searchResult && (
+              <div className="absolute top-full right-0 mt-2 w-96 glass-card p-6 z-50 animate-in fade-in slide-in-from-top-2 border-indigo-500/30">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest subtext">AI Insights</h4>
-                  <button onClick={() => setSearchResults([])} className="subtext hover:text-white">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-indigo-400" />
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white">AI Analysis</h4>
+                  </div>
+                  <button onClick={() => setSearchResult(null)} className="subtext hover:text-white">
                     <X size={14} />
                   </button>
                 </div>
-                <div className="space-y-3">
-                  {searchResults.map((result: string, idx: number) => (
-                    <div key={idx} className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                      <p className="text-sm leading-relaxed">{result}</p>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-lg font-bold text-white">{searchResult.company}</h5>
+                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter ${
+                      searchResult.prediction?.shortTerm === 'Bullish' ? 'bg-green-500/20 text-green-400' : 
+                      searchResult.prediction?.shortTerm === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'
+                    }`}>
+                      {searchResult.prediction?.shortTerm || 'Neutral'}
+                    </span>
+                  </div>
+
+                  {searchResult.type === 'stock' && searchResult.stockData && (
+                    <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Price</p>
+                        <p className="text-xl font-black text-white">₹{searchResult.stockData.price.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Change</p>
+                        <p className={`text-xl font-black ${searchResult.stockData.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {searchResult.stockData.change >= 0 ? '+' : ''}{searchResult.stockData.change} ({searchResult.stockData.changePercent}%)
+                        </p>
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest subtext">Insights</p>
+                    {searchResult.analysis?.map((item: string, idx: number) => (
+                      <div key={idx} className="flex gap-2">
+                        <div className="w-1 h-1 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                        <p className="text-xs leading-relaxed subtext">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest subtext">Recommendation</p>
+                      <p className="text-sm font-black text-indigo-400 uppercase tracking-widest">{searchResult.recommendation}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-widest subtext">Confidence</p>
+                      <p className="text-sm font-black text-white">{searchResult.confidence}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
