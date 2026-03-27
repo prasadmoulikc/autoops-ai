@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -12,10 +12,23 @@ import {
   CheckCircle2,
   ChevronRight,
   Bell,
-  Loader2
+  Loader2,
+  BarChart3
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import { analyzeFinance } from "../services/api";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell,
+  AreaChart,
+  Area
+} from "recharts";
 
 export default function Dashboard() {
   const { userData, analysis: localAnalysis, suggestions: localSuggestions, alerts: localAlerts } = useFinance();
@@ -56,6 +69,18 @@ export default function Dashboard() {
     alerts: apiData?.alerts ?? localAlerts ?? [],
     complianceScore: apiData?.complianceScore ?? 98
   };
+
+  const chartData = useMemo(() => {
+    if (!userData?.transactions) return [];
+    
+    // Group transactions by month (simplified for demo)
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+    return months.map((month, idx) => ({
+      name: month,
+      income: Math.floor(displayData.totalIncome / 6) + (Math.random() * 5000),
+      expenses: Math.floor(displayData.totalExpenses / 6) + (Math.random() * 3000),
+    }));
+  }, [userData, displayData]);
 
   const financialCards = [
     { name: "Total Revenue", value: `₹${displayData.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-green-400", trend: "up" },
@@ -105,8 +130,61 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* AI Insights Panel */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Main Chart Area */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="glass-card p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <BarChart3 size={24} className="text-indigo-400" />
+                <h2 className="text-2xl font-bold uppercase tracking-tight">Cash Flow Analysis</h2>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                  <span className="text-xs font-bold uppercase tracking-widest subtext">Income</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500" />
+                  <span className="text-xs font-bold uppercase tracking-widest subtext">Expenses</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
+                    tickFormatter={(value) => `₹${value/1000}k`}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#ffffff05' }}
+                    contentStyle={{ 
+                      backgroundColor: '#0f172a', 
+                      border: '1px solid #ffffff10', 
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Bar dataKey="income" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={30} />
+                  <Bar dataKey="expenses" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* AI Insights Panel */}
           <div className="glass-card p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10">
               <Zap size={120} className="text-indigo-400" />
@@ -131,22 +209,11 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-
-          {/* Tax Usage Progress */}
-          <div className="glass-card p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">Tax Liability Progress</h3>
-              <span className="text-sm font-bold text-purple-400">₹{displayData.estimatedTax.toLocaleString()} / ₹{(displayData.estimatedTax * 1.5).toLocaleString()}</span>
-            </div>
-            <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]" style={{ width: '66%' }} />
-            </div>
-            <p className="text-xs subtext">You have utilized 66% of your estimated tax provision for this fiscal year.</p>
-          </div>
         </div>
 
-        {/* Smart Alerts */}
-        <div className="space-y-6">
+        {/* Sidebar Panel */}
+        <div className="space-y-8">
+          {/* Smart Alerts */}
           <div className="glass-card p-8">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Bell size={20} className="text-indigo-400" />
@@ -162,6 +229,18 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Tax Usage Progress */}
+          <div className="glass-card p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold">Tax Liability</h3>
+              <span className="text-sm font-bold text-purple-400">₹{displayData.estimatedTax.toLocaleString()}</span>
+            </div>
+            <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden mb-4">
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]" style={{ width: '66%' }} />
+            </div>
+            <p className="text-xs subtext">Estimated tax based on current profit and Indian tax slabs.</p>
           </div>
 
           <div className="glass-card p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20">

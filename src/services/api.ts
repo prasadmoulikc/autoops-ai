@@ -61,22 +61,37 @@ export const searchAI = async (query: string) => {
     const lowerQuery = q.toLowerCase();
     
     // Stock Search Mode
-    if (lowerQuery.includes("birla") || lowerQuery.includes("tcs") || lowerQuery.includes("reliance") || lowerQuery.includes("hdfc") || lowerQuery.includes("stock") || lowerQuery.includes("share")) {
+    if (lowerQuery.includes("birla") || lowerQuery.includes("tcs") || lowerQuery.includes("reliance") || lowerQuery.includes("hdfc") || lowerQuery.includes("infosys") || lowerQuery.includes("wipro") || lowerQuery.includes("stock") || lowerQuery.includes("share")) {
       let company = "Reliance Industries Ltd";
-      let price = 2950;
-      let change = 45;
-      let cap = "19.5L Cr";
+      let price = 2985.40;
+      let change = 12.50;
+      let cap = "20.2L Cr";
+      let pe = 28.4;
       
       if (lowerQuery.includes("birla")) {
         company = "UltraTech Cement (Aditya Birla Group)";
-        price = 10450;
-        change = 120;
+        price = 10540.00;
+        change = 145.20;
         cap = "3.05L Cr";
+        pe = 42.1;
       } else if (lowerQuery.includes("tcs")) {
         company = "Tata Consultancy Services";
-        price = 4120;
-        change = -15;
-        cap = "14.8L Cr";
+        price = 4150.25;
+        change = -22.40;
+        cap = "15.1L Cr";
+        pe = 31.2;
+      } else if (lowerQuery.includes("infosys")) {
+        company = "Infosys Ltd";
+        price = 1680.50;
+        change = 5.30;
+        cap = "6.9L Cr";
+        pe = 25.8;
+      } else if (lowerQuery.includes("hdfc")) {
+        company = "HDFC Bank Ltd";
+        price = 1420.15;
+        change = -1.20;
+        cap = "10.8L Cr";
+        pe = 18.5;
       }
 
       return {
@@ -87,41 +102,41 @@ export const searchAI = async (query: string) => {
           change,
           changePercent: Number(((change/price)*100).toFixed(2)),
           marketCap: cap,
-          peRatio: 38.5
+          peRatio: pe
         },
         analysis: [
-          "Strong uptrend with consistent quarterly growth",
-          "High institutional buying indicates confidence",
-          "Market leader in its respective sector"
+          `Current RSI is ${change > 0 ? '62 (Slightly Overbought)' : '45 (Neutral)'}.`,
+          "Institutional holding (FII/DII) has increased by 1.2% this quarter.",
+          "Strong support level identified at ₹" + (price * 0.95).toFixed(0) + "."
         ],
         prediction: {
           shortTerm: change > 0 ? "Bullish" : change < 0 ? "Bearish" : "Neutral",
-          longTerm: "Growth"
+          longTerm: "Strong Buy"
         },
-        recommendation: change > 0 ? "Buy" : change < 0 ? "Sell" : "Hold",
+        recommendation: change > 0 ? "Accumulate" : change < 0 ? "Wait" : "Hold",
         confidence: "High",
-        reason: "Strong fundamentals, market dominance, and steady earnings growth."
+        reason: "Market sentiment is positive following recent quarterly earnings and sector-wide recovery."
       };
     }
 
     // Financial Mode
-    if (lowerQuery.includes("income") || lowerQuery.includes("tax") || lowerQuery.includes("expense") || lowerQuery.includes("save") || lowerQuery.includes("profit")) {
+    if (lowerQuery.includes("income") || lowerQuery.includes("tax") || lowerQuery.includes("expense") || lowerQuery.includes("save") || lowerQuery.includes("profit") || lowerQuery.includes("gst")) {
       return {
         type: "finance",
         company: "Financial Intelligence Unit",
         stockData: null,
         analysis: [
-          "Based on current Indian tax slabs, you can save up to ₹1.5L under Section 80C.",
-          "Consider NPS for an additional ₹50k deduction.",
-          "Your business expenses are currently optimized at 25% of gross revenue."
+          "Under the New Tax Regime (FY 2024-25), income up to ₹7L is tax-free via rebate.",
+          "Standard deduction has been increased to ₹75,000 for salaried individuals.",
+          "GST Input Tax Credit (ITC) can be claimed on all business-related capital goods."
         ],
         prediction: {
-          shortTerm: "Neutral",
-          longTerm: "Stable"
+          shortTerm: "Optimistic",
+          longTerm: "Growth"
         },
-        recommendation: "Hold",
-        confidence: "High",
-        reason: "Tax planning early in the quarter maximizes compounding benefits."
+        recommendation: "Plan Tax Early",
+        confidence: "Very High",
+        reason: "Recent budget changes favor the new regime for middle-income earners."
       };
     }
 
