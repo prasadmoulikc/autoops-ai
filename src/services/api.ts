@@ -175,7 +175,6 @@ export const searchAI = async (query: string) => {
 
     if (!res.ok) throw new Error("Search request failed");
     const data = await res.json();
-    console.log("DATA:", data);
     
     // Handle array response from n8n (common)
     let responseData = Array.isArray(data) ? data[0] : data;

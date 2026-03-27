@@ -76,7 +76,6 @@ export default function Dashboard() {
       });
 
       const data = await res.json();
-      console.log("DATA:", data);
 
       const parsed = typeof data.output === "string"
         ? JSON.parse(data.output)
