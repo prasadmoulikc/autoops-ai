@@ -170,15 +170,15 @@ export default function Layout({ children }: LayoutProps) {
                     <div className="space-y-4">
                       {searchResult.stockData && (
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">{searchResult.stockData.symbol || 'STOCK'}</p>
-                              <p className="text-2xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
+                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <div className="flex items-center justify-between mb-2">
+                              <h2 className="text-lg font-black text-white uppercase tracking-tight">{searchResult.company || searchResult.stockData.symbol}</h2>
+                              <div className={`flex items-center gap-1 text-sm font-black ${searchResult.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                                {searchResult.stockData.change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                {Math.abs(searchResult.stockData.change)}%
+                              </div>
                             </div>
-                            <div className={`flex items-center gap-2 text-lg font-black ${searchResult.stockData.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                              {searchResult.stockData.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                              {Math.abs(searchResult.stockData.change)}%
-                            </div>
+                            <p className="text-2xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-3">

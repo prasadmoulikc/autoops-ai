@@ -180,16 +180,35 @@ export const searchAI = async (query: string) => {
 
     if (!res.ok) throw new Error("Search request failed");
     const data = await res.json();
+    console.log("DATA:", data);
     
     // Handle array response from n8n (common)
-    const responseData = Array.isArray(data) ? data[0] : data;
+    let responseData = Array.isArray(data) ? data[0] : data;
     
     if (!responseData || typeof responseData !== "object") {
       throw new Error("Invalid response from AI");
     }
 
+    // Handle stringified JSON in output (common for AI responses)
+    if (typeof responseData.output === "string" && responseData.output.trim().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(responseData.output);
+        responseData = { ...responseData, ...parsed };
+      } catch (e) {
+        console.warn("Failed to parse nested JSON in output:", e);
+      }
+    }
+
+    // Helper to ensure analysis is a string or array of strings
+    const formatAnalysis = (val: any) => {
+      if (typeof val === "string") return val;
+      if (Array.isArray(val)) return val.map(v => typeof v === "object" ? JSON.stringify(v) : v);
+      if (typeof val === "object") return JSON.stringify(val);
+      return String(val);
+    };
+
     // If the response looks like direct stock data (as implied by user snippet)
-    if (responseData.price !== undefined || responseData.symbol !== undefined || responseData.stockPrice !== undefined) {
+    if (responseData.price !== undefined || responseData.symbol !== undefined || responseData.stockPrice !== undefined || responseData.type === 'stock') {
       return {
         type: "stock",
         company: responseData.company || responseData.name || "Company",
@@ -200,8 +219,8 @@ export const searchAI = async (query: string) => {
           marketCap: responseData.marketCap || "N/A",
           peRatio: responseData.peRatio || 0
         },
-        analysis: responseData.analysis || responseData.description || "Stock analysis provided by AI.",
-        prediction: responseData.prediction || "Neutral",
+        analysis: formatAnalysis(responseData.analysis || responseData.description || "Stock analysis provided by AI."),
+        prediction: typeof responseData.prediction === "object" ? JSON.stringify(responseData.prediction) : (responseData.prediction || "Neutral"),
         recommendation: responseData.recommendation || "Hold",
         confidence: responseData.confidence || 85,
         reason: responseData.reason || "Based on current market data."
@@ -213,7 +232,7 @@ export const searchAI = async (query: string) => {
       return {
         type: "general",
         company: "AutoOps AI",
-        analysis: responseData.output || responseData.text || responseData,
+        analysis: formatAnalysis(responseData.output || responseData.text || responseData),
         prediction: { shortTerm: "Neutral", longTerm: "Stable" },
         recommendation: "Hold",
         confidence: "High",
