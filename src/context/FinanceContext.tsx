@@ -17,10 +17,11 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 const DEMO_DATA: UserData = {
   income: 1200000,
   businessType: "Freelance",
+  businessName: "Nexus Digital",
   transactions: [
-    { id: "1", amount: 200000, type: "expense", category: "Cloud Servers", date: new Date().toISOString() },
-    { id: "2", amount: 150000, type: "expense", category: "Marketing", date: new Date().toISOString() },
-    { id: "3", amount: 50000, type: "expense", category: "Consulting", date: new Date().toISOString() },
+    { id: "1", amount: 200000, type: "expense", category: "Cloud Servers", date: new Date().toISOString(), description: "AWS Monthly Billing" },
+    { id: "2", amount: 150000, type: "expense", category: "Marketing", date: new Date().toISOString(), description: "Google Ads Campaign" },
+    { id: "3", amount: 50000, type: "expense", category: "Consulting", date: new Date().toISOString(), description: "Strategy Session" },
   ],
   notifications: true,
 };

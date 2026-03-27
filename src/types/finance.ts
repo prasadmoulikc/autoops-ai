@@ -4,11 +4,13 @@ export interface Transaction {
   type: 'income' | 'expense';
   category: string;
   date: string;
+  description?: string;
 }
 
 export interface UserData {
   income: number;
   businessType: string;
+  businessName?: string;
   transactions: Transaction[];
   apiKey?: string;
   notifications?: boolean;
