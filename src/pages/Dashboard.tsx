@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [stockData, setStockData] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const STOCKS = ["RELIANCE", "TCS", "INFY", "HDFC", "WIPRO", "BIRLA", "ADANI", "TATA", "ICICI"];
@@ -56,16 +57,15 @@ export default function Dashboard() {
     query.length > 0 && s.toLowerCase().includes(query.toLowerCase())
   );
 
-  const handleSearch = async (queryToSearch?: string) => {
-    const searchVal = typeof queryToSearch === 'string' ? queryToSearch : query;
+  const handleSearch = async (stockName?: string) => {
+    const searchVal = stockName || query;
     if (!searchVal.trim()) return;
 
-    if (typeof queryToSearch === 'string') {
-      setQuery(queryToSearch);
-    }
-
+    setQuery(searchVal);
     setIsSearching(true);
     setShowSuggestions(false);
+    setSelectedIndex(-1);
+
     try {
       const res = await fetch("https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj", {
         method: "POST",
@@ -77,15 +77,34 @@ export default function Dashboard() {
 
       const data = await res.json();
 
+      // Handle nested JSON in output field if present
       const parsed = typeof data.output === "string"
         ? JSON.parse(data.output)
         : data;
 
       setStockData(parsed);
     } catch (err) {
-      console.error(err);
+      console.error("Search failed:", err);
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev < filteredStocks.length - 1 ? prev + 1 : prev));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === "Enter") {
+      if (selectedIndex >= 0 && selectedIndex < filteredStocks.length) {
+        handleSearch(filteredStocks[selectedIndex]);
+      } else {
+        handleSearch();
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
     }
   };
 
@@ -196,8 +215,10 @@ export default function Dashboard() {
                 onChange={(e) => {
                   setQuery(e.target.value);
                   setShowSuggestions(true);
+                  setSelectedIndex(-1);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
                 placeholder="Search stock (RELIANCE)" 
                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-12 text-sm font-bold focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-white/20"
               />
@@ -223,9 +244,12 @@ export default function Dashboard() {
                     <button
                       key={i}
                       onClick={() => handleSearch(stock)}
-                      className="w-full text-left px-4 py-3 text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                      onMouseEnter={() => setSelectedIndex(i)}
+                      className={`w-full text-left px-4 py-3 text-sm font-bold transition-colors flex items-center gap-3 border-b border-white/5 last:border-0 ${
+                        selectedIndex === i ? "bg-primary/20 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+                      }`}
                     >
-                      <TrendingUp size={16} className="text-primary" />
+                      <TrendingUp size={16} className={selectedIndex === i ? "text-white" : "text-primary"} />
                       {stock}
                     </button>
                   ))}
