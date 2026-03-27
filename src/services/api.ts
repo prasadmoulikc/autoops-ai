@@ -1,5 +1,5 @@
 export const analyzeFinance = async (data: any) => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://likith2103.app.n8n.cloud/webhook/cc1ab40b-4f1b-4189-a85a-876864e784bb/chat";
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj";
   
   // If URL is not configured and no fallback, return a simulated AI response
   if (!webhookUrl || webhookUrl === "YOUR_N8N_WEBHOOK_URL") {
@@ -54,7 +54,7 @@ export const analyzeFinance = async (data: any) => {
 };
 
 export const searchAI = async (query: string) => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://likith2103.app.n8n.cloud/webhook/cc1ab40b-4f1b-4189-a85a-876864e784bb/chat";
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj";
 
   // Simulation Logic for Stock and Financial Search
   const simulateAI = (q: string) => {
@@ -188,12 +188,32 @@ export const searchAI = async (query: string) => {
       throw new Error("Invalid response from AI");
     }
 
+    // If the response looks like direct stock data (as implied by user snippet)
+    if (responseData.price !== undefined || responseData.symbol !== undefined || responseData.stockPrice !== undefined) {
+      return {
+        type: "stock",
+        company: responseData.company || responseData.name || "Company",
+        stockData: {
+          price: responseData.price || responseData.stockPrice || 0,
+          change: responseData.change || responseData.stockChange || 0,
+          symbol: responseData.symbol || responseData.ticker || "STOCK",
+          marketCap: responseData.marketCap || "N/A",
+          peRatio: responseData.peRatio || 0
+        },
+        analysis: responseData.analysis || responseData.description || "Stock analysis provided by AI.",
+        prediction: responseData.prediction || "Neutral",
+        recommendation: responseData.recommendation || "Hold",
+        confidence: responseData.confidence || 85,
+        reason: responseData.reason || "Based on current market data."
+      };
+    }
+
     // If the response is just a string (common for chat bots), wrap it
-    if (typeof responseData === "string" || responseData.output) {
+    if (typeof responseData === "string" || responseData.output || responseData.text) {
       return {
         type: "general",
         company: "AutoOps AI",
-        analysis: [responseData.output || responseData],
+        analysis: responseData.output || responseData.text || responseData,
         prediction: { shortTerm: "Neutral", longTerm: "Stable" },
         recommendation: "Hold",
         confidence: "High",
