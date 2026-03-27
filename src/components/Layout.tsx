@@ -41,11 +41,15 @@ export default function Layout({ children }: LayoutProps) {
     setSearchResult(null);
     try {
       const data = await searchAI(searchQuery);
-      if (data) {
-        setSearchResult(data);
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid response from AI");
       }
+      setSearchResult(data);
     } catch (error) {
       console.error("Search failed:", error);
+      setSearchResult({
+        error: "Something went wrong with the AI analysis. Please try again."
+      });
     } finally {
       setIsSearching(false);
     }
@@ -170,53 +174,62 @@ export default function Layout({ children }: LayoutProps) {
                   </button>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-lg font-bold text-white">{searchResult.company}</h5>
-                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter ${
-                      searchResult.prediction?.shortTerm === 'Bullish' ? 'bg-green-500/20 text-green-400' : 
-                      searchResult.prediction?.shortTerm === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'
-                    }`}>
-                      {searchResult.prediction?.shortTerm || 'Neutral'}
-                    </span>
+                {searchResult.error ? (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <AlertCircle size={18} className="text-red-400 shrink-0" />
+                    <p className="text-sm font-medium text-red-400">{searchResult.error}</p>
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-lg font-bold text-white">{searchResult?.company || "Unknown Entity"}</h5>
+                      <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter ${
+                        searchResult?.prediction?.shortTerm === 'Bullish' ? 'bg-green-500/20 text-green-400' : 
+                        searchResult?.prediction?.shortTerm === 'Bearish' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'
+                      }`}>
+                        {searchResult?.prediction?.shortTerm || 'Neutral'}
+                      </span>
+                    </div>
 
-                  {searchResult.type === 'stock' && searchResult.stockData && (
-                    <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                    {searchResult?.type === 'stock' && searchResult?.stockData && (
+                      <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Price</p>
+                          <p className="text-xl font-black text-white">₹{(searchResult.stockData.price || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Change</p>
+                          <p className={`text-xl font-black ${(searchResult.stockData.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {(searchResult.stockData.change || 0) >= 0 ? '+' : ''}{searchResult.stockData.change || 0} ({searchResult.stockData.changePercent || 0}%)
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest subtext">Insights</p>
+                      {searchResult?.analysis?.length > 0 ? searchResult.analysis.map((item: string, idx: number) => (
+                        <div key={idx} className="flex gap-2">
+                          <div className="w-1 h-1 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                          <p className="text-xs leading-relaxed subtext">{item}</p>
+                        </div>
+                      )) : (
+                        <p className="text-xs italic subtext">No specific insights available for this query.</p>
+                      )}
+                    </div>
+
+                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Price</p>
-                        <p className="text-xl font-black text-white">₹{searchResult.stockData.price.toLocaleString()}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest subtext">Recommendation</p>
+                        <p className="text-sm font-black text-indigo-400 uppercase tracking-widest">{searchResult?.recommendation || "N/A"}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest subtext mb-1">Change</p>
-                        <p className={`text-xl font-black ${searchResult.stockData.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {searchResult.stockData.change >= 0 ? '+' : ''}{searchResult.stockData.change} ({searchResult.stockData.changePercent}%)
-                        </p>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold uppercase tracking-widest subtext">Confidence</p>
+                        <p className="text-sm font-black text-white">{searchResult?.confidence || "Medium"}</p>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest subtext">Insights</p>
-                    {searchResult.analysis?.map((item: string, idx: number) => (
-                      <div key={idx} className="flex gap-2">
-                        <div className="w-1 h-1 rounded-full bg-indigo-500 mt-2 shrink-0" />
-                        <p className="text-xs leading-relaxed subtext">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest subtext">Recommendation</p>
-                      <p className="text-sm font-black text-indigo-400 uppercase tracking-widest">{searchResult.recommendation}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold uppercase tracking-widest subtext">Confidence</p>
-                      <p className="text-sm font-black text-white">{searchResult.confidence}</p>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

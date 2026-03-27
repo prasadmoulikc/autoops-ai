@@ -95,10 +95,10 @@ export const searchAI = async (query: string) => {
           "Market leader in its respective sector"
         ],
         prediction: {
-          shortTerm: change > 0 ? "Bullish" : "Neutral",
-          longTerm: "Strong Growth"
+          shortTerm: change > 0 ? "Bullish" : change < 0 ? "Bearish" : "Neutral",
+          longTerm: "Growth"
         },
-        recommendation: change > 0 ? "Buy" : "Hold",
+        recommendation: change > 0 ? "Buy" : change < 0 ? "Sell" : "Hold",
         confidence: "High",
         reason: "Strong fundamentals, market dominance, and steady earnings growth."
       };
@@ -109,22 +109,19 @@ export const searchAI = async (query: string) => {
       return {
         type: "finance",
         company: "Financial Intelligence Unit",
+        stockData: null,
         analysis: [
           "Based on current Indian tax slabs, you can save up to ₹1.5L under Section 80C.",
           "Consider NPS for an additional ₹50k deduction.",
           "Your business expenses are currently optimized at 25% of gross revenue."
         ],
         prediction: {
-          shortTerm: "Stable",
-          longTerm: "Growth"
+          shortTerm: "Neutral",
+          longTerm: "Stable"
         },
-        recommendation: "Optimize",
+        recommendation: "Hold",
         confidence: "High",
-        reason: "Tax planning early in the quarter maximizes compounding benefits.",
-        financialDetails: {
-          suggestedSavings: ["ELSS", "PPF", "NPS", "Health Insurance"],
-          taxOptimization: "Switch to Presumptive Taxation (44ADA) if eligible."
-        }
+        reason: "Tax planning early in the quarter maximizes compounding benefits."
       };
     }
 
@@ -132,6 +129,7 @@ export const searchAI = async (query: string) => {
     return {
       type: "general",
       company: "AutoOps Knowledge Base",
+      stockData: null,
       analysis: [
         "Global markets are showing signs of recovery after recent inflation data.",
         "Indian startup ecosystem is seeing renewed interest from VC firms.",
@@ -141,7 +139,7 @@ export const searchAI = async (query: string) => {
         shortTerm: "Neutral",
         longTerm: "Stable"
       },
-      recommendation: "Monitor",
+      recommendation: "Hold",
       confidence: "Medium",
       reason: "Macroeconomic factors are currently in a transition phase."
     };
@@ -166,6 +164,11 @@ export const searchAI = async (query: string) => {
 
     if (!res.ok) throw new Error("Search request failed");
     const data = await res.json();
+    
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid response from AI");
+    }
+
     return data;
   } catch (error) {
     console.error("AI Search failed:", error);

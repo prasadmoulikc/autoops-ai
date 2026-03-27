@@ -24,13 +24,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!userData) return;
       setIsLoading(true);
       try {
         const result = await analyzeFinance({
-          income: userData.income,
-          expenses: userData.transactions.filter(t => t.type === 'expense'),
-          transactions: userData.transactions,
-          businessType: userData.businessType
+          income: userData?.income || 0,
+          expenses: (userData?.transactions || []).filter(t => t.type === 'expense'),
+          transactions: userData?.transactions || [],
+          businessType: userData?.businessType || 'General'
         });
         if (result) {
           setApiData(result);
@@ -47,12 +48,12 @@ export default function Dashboard() {
 
   // Fail-safe: Use API data if available, otherwise fallback to local analysis
   const displayData = {
-    totalIncome: apiData?.totalIncome ?? localAnalysis.totalIncome,
-    totalExpenses: apiData?.totalExpenses ?? localAnalysis.totalExpenses,
-    profit: apiData?.profit ?? localAnalysis.profit,
-    estimatedTax: apiData?.tax ?? localAnalysis.estimatedTax,
-    suggestions: apiData?.insights ?? localSuggestions,
-    alerts: apiData?.alerts ?? localAlerts,
+    totalIncome: apiData?.totalIncome ?? localAnalysis?.totalIncome ?? 0,
+    totalExpenses: apiData?.totalExpenses ?? localAnalysis?.totalExpenses ?? 0,
+    profit: apiData?.profit ?? localAnalysis?.profit ?? 0,
+    estimatedTax: apiData?.tax ?? localAnalysis?.estimatedTax ?? 0,
+    suggestions: apiData?.insights ?? localSuggestions ?? [],
+    alerts: apiData?.alerts ?? localAlerts ?? [],
     complianceScore: apiData?.complianceScore ?? 98
   };
 
