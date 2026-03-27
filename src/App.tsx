@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+  Routes, 
+  Route, 
+  useNavigate, 
+  Navigate 
+} from 'react-router-dom';
+import { 
   LayoutDashboard, 
   Receipt, 
   Bot, 
@@ -607,14 +613,129 @@ const SettingsPage = () => {
 
 // --- Main Application ---
 
-export default function App() {
-  const { user, signIn, logout } = useAuth();
+// --- Pages ---
+
+const LandingPage = () => {
+  const { user, signIn } = useAuth();
+  const navigate = useNavigate();
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleInitialize = async () => {
+    try {
+      setIsInitializing(true);
+      setError(null);
+      
+      // Artificial delay for "Neural Link" initialization feel
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      await signIn();
+      // Navigation happens in useEffect once user is authenticated
+    } catch (err) {
+      console.error(err);
+      setError("Failed to initialize AI. Please try again.");
+      setIsInitializing(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0F] text-white flex items-center justify-center p-6 overflow-hidden relative">
+      {/* Background Glows */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] animate-pulse delay-1000" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-md w-full relative z-10"
+      >
+        <GlassCard className="p-8 md:p-12 text-center border-blue-500/20 bg-blue-500/5 shadow-2xl" hover={false}>
+          <motion.div 
+            animate={isInitializing ? { 
+              rotate: 360,
+              scale: [1, 1.1, 1],
+            } : {}}
+            transition={isInitializing ? { 
+              rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+              scale: { duration: 1, repeat: Infinity }
+            } : {}}
+            className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(59,130,246,0.4)]"
+          >
+            {isInitializing ? <Loader2 size={40} className="text-white animate-spin" /> : <Bot size={48} className="text-white" />}
+          </motion.div>
+          
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
+            AutoOps <span className="text-blue-400">AI</span>
+          </h1>
+          
+          <p className="text-white/40 text-sm md:text-base mb-10 leading-relaxed">
+            The world's first autonomous business operator for Indian entrepreneurs. 
+            <span className="block mt-2 text-blue-400/60">Execute, don't just suggest.</span>
+          </p>
+
+          <div className="space-y-4">
+            <GlowButton 
+              onClick={handleInitialize} 
+              disabled={isInitializing}
+              className="w-full py-4 text-lg flex items-center justify-center gap-3"
+            >
+              {isInitializing ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Initializing AI...</span>
+                </>
+              ) : (
+                <>
+                  <span>Initialize Neural Link</span>
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </GlowButton>
+            
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="text-red-400 text-xs font-bold uppercase tracking-wider"
+              >
+                {error}
+              </motion.p>
+            )}
+          </div>
+
+          <p className="mt-8 text-[10px] text-white/20 uppercase tracking-[0.2em] font-bold">
+            Secure Authentication via Google Cloud
+          </p>
+        </GlassCard>
+      </motion.div>
+    </div>
+  );
+};
+
+const DashboardPage = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [flowState, setFlowState] = useState<'idle' | 'thinking' | 'planning' | 'executing' | 'success' | 'learning'>('idle');
   const [userInput, setUserInput] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [systemMessages, setSystemMessages] = useState<string[]>([]);
   const [agentResponse, setAgentResponse] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const addSystemMessage = (msg: string) => {
     setSystemMessages(prev => [msg, ...prev].slice(0, 5));
@@ -887,38 +1008,17 @@ export default function App() {
           </div>
         </div>
       </aside>
-
-      {/* LOGIN OVERLAY */}
-      <AnimatePresence>
-        {!user && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0A0A0F]/90 backdrop-blur-2xl p-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="max-w-md w-full"
-            >
-              <GlassCard className="p-12 text-center border-blue-500/20 bg-blue-500/5" hover={false}>
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(59,130,246,0.4)]">
-                  <Bot size={48} className="text-white" />
-                </div>
-                <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">AutoOps <span className="text-blue-400">AI</span></h2>
-                <p className="text-white/40 text-sm mb-10 leading-relaxed">
-                  The world's first autonomous business operator for Indian entrepreneurs. Execute, don't just suggest.
-                </p>
-                <GlowButton onClick={() => signIn()} className="w-full py-4 text-lg">
-                  Initialize Neural Link
-                </GlowButton>
-                <p className="mt-6 text-[10px] text-white/20 uppercase tracking-widest font-bold">Secure Authentication via Google</p>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      {/* Fallback for any other route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
