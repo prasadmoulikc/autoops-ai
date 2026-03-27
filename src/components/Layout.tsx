@@ -25,6 +25,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { searchAI } from "../services/api";
 import { useFinance } from "../context/FinanceContext";
+import ChatBot from "./ChatBot";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -313,6 +314,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="fixed bottom-1/4 -left-20 w-96 h-96 bg-accent/5 blur-[120px] rounded-full pointer-events-none -z-10" />
         </main>
       </div>
+      <ChatBot />
     </div>
   );
 }

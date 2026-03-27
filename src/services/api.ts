@@ -1,7 +1,7 @@
 export const analyzeFinance = async (data: any) => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://likith2103.app.n8n.cloud/webhook/cc1ab40b-4f1b-4189-a85a-876864e784bb/chat";
   
-  // If URL is not configured, return a simulated AI response to keep the app functional
+  // If URL is not configured and no fallback, return a simulated AI response
   if (!webhookUrl || webhookUrl === "YOUR_N8N_WEBHOOK_URL") {
     const income = Number(data.income) || 0;
     const expenses = Array.isArray(data.expenses) ? data.expenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) : 0;
@@ -54,7 +54,7 @@ export const analyzeFinance = async (data: any) => {
 };
 
 export const searchAI = async (query: string) => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "https://likith2103.app.n8n.cloud/webhook/cc1ab40b-4f1b-4189-a85a-876864e784bb/chat";
 
   // Simulation Logic for Stock and Financial Search
   const simulateAI = (q: string) => {
@@ -173,6 +173,7 @@ export const searchAI = async (query: string) => {
       },
       body: JSON.stringify({ 
         type: "search",
+        chatInput: query, // Common n8n chat input field
         query 
       })
     });
@@ -180,11 +181,27 @@ export const searchAI = async (query: string) => {
     if (!res.ok) throw new Error("Search request failed");
     const data = await res.json();
     
-    if (!data || typeof data !== "object") {
+    // Handle array response from n8n (common)
+    const responseData = Array.isArray(data) ? data[0] : data;
+    
+    if (!responseData || typeof responseData !== "object") {
       throw new Error("Invalid response from AI");
     }
 
-    return data;
+    // If the response is just a string (common for chat bots), wrap it
+    if (typeof responseData === "string" || responseData.output) {
+      return {
+        type: "general",
+        company: "AutoOps AI",
+        analysis: [responseData.output || responseData],
+        prediction: { shortTerm: "Neutral", longTerm: "Stable" },
+        recommendation: "Hold",
+        confidence: "High",
+        reason: "AI generated response."
+      };
+    }
+
+    return responseData;
   } catch (error) {
     console.error("AI Search failed:", error);
     return simulateAI(query); // Fallback to simulation on error
