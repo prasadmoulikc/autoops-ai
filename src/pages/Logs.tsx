@@ -7,8 +7,8 @@ export default function Logs() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredLogs = userData.transactions.filter(log => 
-    log.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.type.toLowerCase().includes(searchQuery.toLowerCase())
+    (log.category || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+    (log.type || "").toLowerCase().includes((searchQuery || "").toLowerCase())
   );
 
   return (

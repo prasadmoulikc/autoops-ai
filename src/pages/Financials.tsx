@@ -39,8 +39,8 @@ export default function Financials() {
   const filteredTransactions = useMemo(() => {
     if (!userData?.transactions) return [];
     return userData.transactions.filter(t => 
-      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchTerm.toLowerCase())
+      (t.description || "").toLowerCase().includes((searchTerm || "").toLowerCase()) ||
+      (t.category || "").toLowerCase().includes((searchTerm || "").toLowerCase())
     );
   }, [userData?.transactions, searchTerm]);
 

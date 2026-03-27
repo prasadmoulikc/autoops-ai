@@ -84,7 +84,7 @@ export default function AIInsights() {
 
   const filteredStocks = useMemo(() => {
     return STOCKS.filter(s => 
-      debouncedQuery.length > 0 && s.toLowerCase().includes(debouncedQuery.toLowerCase())
+      (debouncedQuery || "").length > 0 && (s || "").toLowerCase().includes((debouncedQuery || "").toLowerCase())
     );
   }, [debouncedQuery]);
 
@@ -108,7 +108,8 @@ export default function AIInsights() {
       if (!res.ok) throw new Error("Network response was not ok");
       
       const data = await res.json();
-      const parsed = typeof data.output === "string" ? JSON.parse(data.output) : data;
+      const responseData = Array.isArray(data) ? data[0] : data;
+      const parsed = typeof responseData.output === "string" ? JSON.parse(responseData.output) : responseData;
       
       if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) {
         throw new Error("No data found for this query");
@@ -428,12 +429,12 @@ export default function AIInsights() {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">Recommendation</p>
                     <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl flex items-center gap-2 ${
-                      stockData?.recommendation?.toLowerCase()?.includes('buy') ? 'bg-success/20 text-success border border-success/20' :
-                      stockData?.recommendation?.toLowerCase()?.includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
+                      (stockData?.recommendation || "").toLowerCase().includes('buy') ? 'bg-success/20 text-success border border-success/20' :
+                      (stockData?.recommendation || "").toLowerCase().includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
                       'bg-accent/20 text-accent border border-accent/20'
                     }`}>
-                      {stockData?.recommendation?.toLowerCase()?.includes('buy') && <TrendingUp size={20} />}
-                      {stockData?.recommendation?.toLowerCase()?.includes('sell') && <TrendingDown size={20} />}
+                      {(stockData?.recommendation || "").toLowerCase().includes('buy') && <TrendingUp size={20} />}
+                      {(stockData?.recommendation || "").toLowerCase().includes('sell') && <TrendingDown size={20} />}
                       {stockData?.recommendation}
                     </div>
                   </div>

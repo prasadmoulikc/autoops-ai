@@ -75,8 +75,8 @@ export default function Dashboard() {
   const filteredTransactions = useMemo(() => {
     if (!userData?.transactions) return [];
     return userData.transactions.filter(t => 
-      t.description.toLowerCase().includes(transactionSearch.toLowerCase()) ||
-      t.category.toLowerCase().includes(transactionSearch.toLowerCase())
+      (t.description || "").toLowerCase().includes((transactionSearch || "").toLowerCase()) ||
+      (t.category || "").toLowerCase().includes((transactionSearch || "").toLowerCase())
     );
   }, [userData?.transactions, transactionSearch]);
   
@@ -88,7 +88,7 @@ export default function Dashboard() {
 
   const filteredStocks = useMemo(() => {
     return STOCKS.filter(s => 
-      debouncedQuery.length > 0 && s.toLowerCase().includes(debouncedQuery.toLowerCase())
+      (debouncedQuery || "").length > 0 && (s || "").toLowerCase().includes((debouncedQuery || "").toLowerCase())
     );
   }, [debouncedQuery]);
 
@@ -113,7 +113,8 @@ export default function Dashboard() {
       if (!res.ok) throw new Error("Network response was not ok");
       
       const data = await res.json();
-      const parsed = typeof data.output === "string" ? JSON.parse(data.output) : data;
+      const responseData = Array.isArray(data) ? data[0] : data;
+      const parsed = typeof responseData.output === "string" ? JSON.parse(responseData.output) : responseData;
       
       if (!parsed || (typeof parsed === 'object' && Object.keys(parsed).length === 0)) {
         throw new Error("No data found for this query");
@@ -318,6 +319,18 @@ export default function Dashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <div className="flex flex-wrap gap-2 mt-2">
+              {["RELIANCE", "INFY", "WIPRO"].map((stock) => (
+                <button
+                  key={stock}
+                  onClick={() => handleSearch(stock)}
+                  className="glass-card px-3 py-1 text-[9px] font-black text-white/40 hover:text-white hover:border-primary/50 transition-all uppercase tracking-widest"
+                >
+                  {stock}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -476,8 +489,8 @@ export default function Dashboard() {
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">Recommendation</p>
                     <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl ${
-                      stockData?.recommendation?.toLowerCase()?.includes('buy') ? 'bg-success/20 text-success border border-success/20' :
-                      stockData?.recommendation?.toLowerCase()?.includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
+                      (stockData?.recommendation || "").toLowerCase().includes('buy') ? 'bg-success/20 text-success border border-success/20' :
+                      (stockData?.recommendation || "").toLowerCase().includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
                       'bg-accent/20 text-accent border border-accent/20'
                     }`}>
                       {stockData?.recommendation}

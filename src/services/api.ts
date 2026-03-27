@@ -54,7 +54,7 @@ export const analyzeFinance = async (data: any) => {
 };
 
 const simulateAI = (q: string) => {
-  const lowerQuery = q.toLowerCase();
+  const lowerQuery = (q || "").toLowerCase();
   
   // Stock Search Mode
   if (lowerQuery.includes("birla") || lowerQuery.includes("tcs") || lowerQuery.includes("reliance") || lowerQuery.includes("hdfc") || lowerQuery.includes("infosys") || lowerQuery.includes("wipro") || lowerQuery.includes("stock") || lowerQuery.includes("share")) {
