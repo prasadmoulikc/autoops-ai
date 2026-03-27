@@ -17,8 +17,10 @@ import {
   FileText,
   ShieldCheck,
   PieChart,
-  Target
+  Target,
+  Loader2
 } from "lucide-react";
+import { searchAI } from "../services/api";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,8 +29,26 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const data = await searchAI(searchQuery);
+      if (data && data.insights) {
+        setSearchResults(data.insights);
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const navItems = [
     { name: "Overview", path: "/dashboard", icon: LayoutDashboard },
@@ -122,9 +142,38 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center glass-card bg-white/5 border-white/10 px-4 py-2 rounded-xl">
-            <Search size={18} className="subtext mr-2" />
-            <input type="text" placeholder="Search financials..." className="bg-transparent border-none focus:outline-none text-sm w-48" />
+          <div className="relative hidden md:block">
+            <div className="flex items-center glass-card bg-white/5 border-white/10 px-4 py-2 rounded-xl">
+              <Search size={18} className="subtext mr-2" />
+              <input 
+                type="text" 
+                placeholder="Search financials..." 
+                className="bg-transparent border-none focus:outline-none text-sm w-48"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              {isSearching && <Loader2 size={14} className="animate-spin text-indigo-400 ml-2" />}
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-full right-0 mt-2 w-96 glass-card p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest subtext">AI Insights</h4>
+                  <button onClick={() => setSearchResults([])} className="subtext hover:text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {searchResults.map((result: string, idx: number) => (
+                    <div key={idx} className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                      <p className="text-sm leading-relaxed">{result}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <button className="relative p-2 glass-card rounded-xl hover:bg-white/10 transition-colors">
             <Bell size={20} className="subtext" />

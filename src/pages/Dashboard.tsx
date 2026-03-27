@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,18 +11,56 @@ import {
   FileWarning,
   CheckCircle2,
   ChevronRight,
-  Bell
+  Bell,
+  Loader2
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
+import { analyzeFinance } from "../services/api";
 
 export default function Dashboard() {
-  const { analysis, suggestions, alerts } = useFinance();
+  const { userData, analysis: localAnalysis, suggestions: localSuggestions, alerts: localAlerts } = useFinance();
+  const [apiData, setApiData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const result = await analyzeFinance({
+          income: userData.income,
+          expenses: userData.transactions.filter(t => t.type === 'expense'),
+          transactions: userData.transactions,
+          businessType: userData.businessType
+        });
+        if (result) {
+          setApiData(result);
+        }
+      } catch (error) {
+        console.error("Failed to fetch AI analysis:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userData]);
+
+  // Fail-safe: Use API data if available, otherwise fallback to local analysis
+  const displayData = {
+    totalIncome: apiData?.totalIncome ?? localAnalysis.totalIncome,
+    totalExpenses: apiData?.totalExpenses ?? localAnalysis.totalExpenses,
+    profit: apiData?.profit ?? localAnalysis.profit,
+    estimatedTax: apiData?.tax ?? localAnalysis.estimatedTax,
+    suggestions: apiData?.insights ?? localSuggestions,
+    alerts: apiData?.alerts ?? localAlerts,
+    complianceScore: apiData?.complianceScore ?? 98
+  };
 
   const financialCards = [
-    { name: "Total Revenue", value: `₹${analysis.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-green-400", trend: "up" },
-    { name: "Total Expenses", value: `₹${analysis.totalExpenses.toLocaleString()}`, change: "+8.4%", icon: CreditCard, color: "text-red-400", trend: "up" },
-    { name: "Net Profit", value: `₹${analysis.profit.toLocaleString()}`, change: "+18.2%", icon: TrendingUp, color: "text-indigo-400", trend: "up" },
-    { name: "Estimated Tax", value: `₹${analysis.estimatedTax.toLocaleString()}`, change: "Due in 12d", icon: AlertCircle, color: "text-purple-400", trend: "neutral" },
+    { name: "Total Revenue", value: `₹${displayData.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-green-400", trend: "up" },
+    { name: "Total Expenses", value: `₹${displayData.totalExpenses.toLocaleString()}`, change: "+8.4%", icon: CreditCard, color: "text-red-400", trend: "up" },
+    { name: "Net Profit", value: `₹${displayData.profit.toLocaleString()}`, change: "+18.2%", icon: TrendingUp, color: "text-indigo-400", trend: "up" },
+    { name: "Estimated Tax", value: `₹${displayData.estimatedTax.toLocaleString()}`, change: "Due in 12d", icon: AlertCircle, color: "text-purple-400", trend: "neutral" },
   ];
 
   return (
@@ -35,8 +74,12 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <div className="glass-card px-4 py-2 flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_#4ade80]" />
-            <span className="text-xs font-bold uppercase tracking-widest">AI Sync Active</span>
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+            ) : (
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_#4ade80]" />
+            )}
+            <span className="text-xs font-bold uppercase tracking-widest">{isLoading ? "AI Analyzing..." : "AI Sync Active"}</span>
           </div>
         </div>
       </header>
@@ -73,7 +116,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-bold uppercase tracking-tight">AI Recommendations</h2>
               </div>
               <div className="space-y-4">
-                {suggestions.map((text, idx) => (
+                {displayData.suggestions.map((text: string, idx: number) => (
                   <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                     <div className="p-2 rounded-lg bg-green-500/10 text-green-400">
                       <Zap size={18} />
@@ -92,7 +135,7 @@ export default function Dashboard() {
           <div className="glass-card p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold">Tax Liability Progress</h3>
-              <span className="text-sm font-bold text-purple-400">₹{analysis.estimatedTax.toLocaleString()} / ₹{(analysis.estimatedTax * 1.5).toLocaleString()}</span>
+              <span className="text-sm font-bold text-purple-400">₹{displayData.estimatedTax.toLocaleString()} / ₹{(displayData.estimatedTax * 1.5).toLocaleString()}</span>
             </div>
             <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]" style={{ width: '66%' }} />
@@ -109,7 +152,7 @@ export default function Dashboard() {
               Smart Alerts
             </h2>
             <div className="space-y-4">
-              {alerts.map((text, idx) => (
+              {displayData.alerts.map((text: string, idx: number) => (
                 <div key={idx} className="p-4 rounded-2xl bg-white/5 border-l-4 border-indigo-500 hover:bg-white/10 transition-all cursor-pointer">
                   <div className="flex items-center gap-3 mb-1">
                     <AlertCircle size={16} className="text-indigo-400" />
@@ -125,7 +168,7 @@ export default function Dashboard() {
               <CheckCircle2 size={24} className="text-green-400" />
               <h3 className="text-lg font-bold">Compliance Score</h3>
             </div>
-            <p className="text-4xl font-black text-white mb-2">98/100</p>
+            <p className="text-4xl font-black text-white mb-2">{displayData.complianceScore}/100</p>
             <p className="text-xs subtext">Your business is fully compliant with current tax regulations.</p>
           </div>
         </div>
