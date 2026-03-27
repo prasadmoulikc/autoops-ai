@@ -16,7 +16,8 @@ import {
   Search,
   BrainCircuit,
   X,
-  Loader2
+  Loader2,
+  Star
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import { 
@@ -26,12 +27,14 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  BarChart,
+  Bar
 } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function AIInsights() {
-  const { suggestions: localSuggestions, alerts, analysis } = useFinance();
+  const { suggestions: localSuggestions, alerts, analysis, searchHistory, addToHistory, clearHistory, watchlist, addToWatchlist, removeFromWatchlist } = useFinance();
   
   // Production State Management
   const [query, setQuery] = useState("");
@@ -44,6 +47,34 @@ export default function AIInsights() {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const STOCKS = ["RELIANCE", "TCS", "INFY", "HDFC", "WIPRO", "BIRLA", "ADANI", "TATA", "ICICI"];
+  
+  // Real-time chart data simulation
+  const chartData = useMemo(() => {
+    if (!stockData?.stockData?.price) return [];
+    const basePrice = stockData.stockData.price;
+    return Array.from({ length: 20 }).map((_, i) => ({
+      time: i,
+      price: basePrice + (Math.random() - 0.5) * (basePrice * 0.02)
+    }));
+  }, [stockData]);
+
+  const isWatchlisted = useMemo(() => {
+    if (!stockData?.company) return false;
+    return watchlist.some(item => item.symbol === stockData.company);
+  }, [watchlist, stockData]);
+
+  const toggleWatchlist = () => {
+    if (!stockData) return;
+    if (isWatchlisted) {
+      removeFromWatchlist(stockData.company);
+    } else {
+      addToWatchlist({
+        symbol: stockData.company,
+        price: stockData.stockData?.price || 0,
+        change: stockData.stockData?.change || 0
+      });
+    }
+  };
   
   // Debounce logic for autocomplete
   useEffect(() => {
@@ -84,6 +115,7 @@ export default function AIInsights() {
       }
 
       setStockData(parsed);
+      addToHistory(searchVal);
     } catch (err: any) {
       setError(err.message || "Failed to fetch stock intelligence. Please try again.");
       console.error("Search error:", err);
@@ -190,14 +222,29 @@ export default function AIInsights() {
             </div>
 
             <AnimatePresence>
-              {showSuggestions && filteredStocks.length > 0 && (
+              {showSuggestions && (filteredStocks.length > 0 || (query === "" && searchHistory.length > 0)) && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className="absolute top-full left-0 right-0 mt-2 glass-card overflow-hidden z-[60] border-white/10 shadow-2xl"
                 >
-                  {filteredStocks.map((stock, i) => (
+                  {query === "" && searchHistory.length > 0 && (
+                    <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center justify-between">
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Recent Searches</p>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearHistory();
+                        }}
+                        className="text-[8px] font-black text-white/20 hover:text-danger uppercase tracking-widest transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                  
+                  {(query === "" ? searchHistory : filteredStocks).map((stock, i) => (
                     <button
                       key={i}
                       onClick={() => handleSearch(stock)}
@@ -257,7 +304,29 @@ export default function AIInsights() {
 
       {/* AI Stock Search Result Display */}
       <AnimatePresence>
-        {stockData && (
+        {isSearching && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="glass-card p-8 border-white/10 bg-white/5 animate-pulse"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-white/10" />
+              <div className="space-y-2">
+                <div className="h-6 w-48 bg-white/10 rounded" />
+                <div className="h-3 w-24 bg-white/10 rounded" />
+              </div>
+            </div>
+            <div className="h-48 w-full bg-white/10 rounded-2xl mb-8" />
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-2 h-32 bg-white/10 rounded-2xl" />
+              <div className="h-32 bg-white/10 rounded-2xl" />
+            </div>
+          </motion.div>
+        )}
+
+        {stockData && !isSearching && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -265,12 +334,20 @@ export default function AIInsights() {
             className="overflow-hidden"
           >
             <div className="glass-card p-8 border-primary/20 bg-primary/5 relative group">
-              <button 
-                onClick={() => setStockData(null)}
-                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                <button 
+                  onClick={toggleWatchlist}
+                  className={`p-2 rounded-xl transition-all ${isWatchlisted ? 'bg-primary text-white' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Star size={20} fill={isWatchlisted ? "currentColor" : "none"} />
+                </button>
+                <button 
+                  onClick={() => setStockData(null)}
+                  className="p-2 text-white/20 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
               
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div className="flex items-center gap-4">
@@ -300,6 +377,34 @@ export default function AIInsights() {
                 )}
               </div>
 
+              {/* Real-time Chart Integration */}
+              <div className="h-48 w-full mb-8 bg-white/5 rounded-2xl p-4 border border-white/5">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="stockGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={stockData?.stockData?.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={stockData?.stockData?.change >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area 
+                      type="monotone" 
+                      dataKey="price" 
+                      stroke={stockData?.stockData?.change >= 0 ? "#10b981" : "#ef4444"} 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#stockGradient)" 
+                      animationDuration={1500}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      itemStyle={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}
+                      labelStyle={{ display: 'none' }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
@@ -322,11 +427,13 @@ export default function AIInsights() {
                 <div className="space-y-6">
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">Recommendation</p>
-                    <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl ${
+                    <div className={`text-2xl font-black uppercase tracking-tighter px-6 py-2 rounded-xl flex items-center gap-2 ${
                       stockData?.recommendation?.toLowerCase()?.includes('buy') ? 'bg-success/20 text-success border border-success/20' :
                       stockData?.recommendation?.toLowerCase()?.includes('sell') ? 'bg-danger/20 text-danger border border-danger/20' :
                       'bg-accent/20 text-accent border border-accent/20'
                     }`}>
+                      {stockData?.recommendation?.toLowerCase()?.includes('buy') && <TrendingUp size={20} />}
+                      {stockData?.recommendation?.toLowerCase()?.includes('sell') && <TrendingDown size={20} />}
                       {stockData?.recommendation}
                     </div>
                   </div>

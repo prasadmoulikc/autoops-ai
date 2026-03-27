@@ -34,7 +34,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
-  const { userData } = useFinance();
+  const { userData, user, logout, watchlist, removeFromWatchlist, clearWatchlist } = useFinance();
 
   const navItems = [
     { name: "Overview", path: "/dashboard", icon: LayoutDashboard },
@@ -92,12 +92,20 @@ export default function Layout({ children }: LayoutProps) {
             <div className="h-8 w-[1px] bg-white/10 mx-1 hidden sm:block" />
             <button className="flex items-center gap-3 pl-1 pr-3 py-1 rounded-full hover:bg-white/5 transition-colors group">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/20">
-                {userData.businessName?.charAt(0) || 'B'}
+                {user?.name?.charAt(0) || 'U'}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold leading-none mb-0.5">{userData.businessName || 'Business'}</p>
+                <p className="text-xs font-bold leading-none mb-0.5">{user?.name || 'User'}</p>
                 <p className="text-[10px] text-white/40 uppercase tracking-tighter">Pro Plan</p>
               </div>
+            </button>
+            
+            <button 
+              onClick={logout}
+              className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-danger transition-colors group"
+              title="Logout"
+            >
+              <LogOut size={20} className="group-hover:scale-110 transition-transform" />
             </button>
             
             <button 
@@ -144,6 +152,56 @@ export default function Layout({ children }: LayoutProps) {
                   )}
                 </Link>
               ))}
+            </div>
+
+            <div className="space-y-2 pt-8 border-t border-white/5">
+              <div className="flex items-center justify-between px-4 mb-4">
+                <p className={`text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] transition-opacity duration-300 ${!isSidebarOpen && 'opacity-0'}`}>
+                  Watchlist
+                </p>
+                {isSidebarOpen && watchlist.length > 0 && (
+                  <button 
+                    onClick={clearWatchlist}
+                    className="text-[8px] font-black text-white/20 hover:text-danger uppercase tracking-widest transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="px-2 space-y-1">
+                {watchlist.map((item) => (
+                  <div 
+                    key={item.symbol}
+                    className="group flex items-center justify-between px-4 py-2 rounded-xl hover:bg-white/5 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.change >= 0 ? 'bg-success' : 'bg-danger'}`} />
+                      <div className={`flex flex-col transition-opacity duration-300 ${!isSidebarOpen && 'opacity-0'}`}>
+                        <span className="text-xs font-black tracking-wide uppercase text-white">
+                          {item.symbol}
+                        </span>
+                        <span className={`text-[8px] font-bold ${item.change >= 0 ? 'text-success' : 'text-danger'}`}>
+                          {item.change >= 0 ? '+' : ''}{item.change}%
+                        </span>
+                      </div>
+                    </div>
+                    {isSidebarOpen && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-white/40 group-hover:text-white transition-colors">₹{item.price.toLocaleString()}</span>
+                        <button 
+                          onClick={() => removeFromWatchlist(item.symbol)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-white/20 hover:text-danger transition-all"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {watchlist.length === 0 && isSidebarOpen && (
+                  <p className="text-[10px] text-white/20 px-4 font-medium italic">Empty watchlist</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2 pt-8 border-t border-white/5">

@@ -7,9 +7,17 @@ import Logs from "./pages/Logs";
 import Settings from "./pages/Settings";
 import TaxPlanner from "./pages/TaxPlanner";
 import AIInsights from "./pages/AIInsights";
+import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import { FinanceProvider, useFinance } from "./context/FinanceContext";
-import { X, Save } from "lucide-react";
+import { X, Save, LogIn } from "lucide-react";
+import { Navigate } from "react-router-dom";
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useFinance();
+  if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 function FirstTimeModal() {
   const { isFirstTime, updateUserData } = useFinance();
@@ -138,12 +146,13 @@ function AppContent() {
       <FirstTimeModal />
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/dashboard" element={withLayout(Dashboard)} />
-        <Route path="/financials" element={withLayout(Financials)} />
-        <Route path="/tax-planner" element={withLayout(TaxPlanner)} />
-        <Route path="/insights" element={withLayout(AIInsights)} />
-        <Route path="/logs" element={withLayout(Logs)} />
-        <Route path="/settings" element={withLayout(Settings)} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<ProtectedRoute>{withLayout(Dashboard)}</ProtectedRoute>} />
+        <Route path="/financials" element={<ProtectedRoute>{withLayout(Financials)}</ProtectedRoute>} />
+        <Route path="/tax-planner" element={<ProtectedRoute>{withLayout(TaxPlanner)}</ProtectedRoute>} />
+        <Route path="/insights" element={<ProtectedRoute>{withLayout(AIInsights)}</ProtectedRoute>} />
+        <Route path="/logs" element={<ProtectedRoute>{withLayout(Logs)}</ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute>{withLayout(Settings)}</ProtectedRoute>} />
         {/* Fallback for 404 */}
         <Route path="*" element={<Landing />} />
       </Routes>

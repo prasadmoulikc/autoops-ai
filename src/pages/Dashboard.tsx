@@ -21,7 +21,11 @@ import {
   Search,
   BrainCircuit,
   X,
-  Target
+  Target,
+  Star,
+  History,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon
 } from "lucide-react";
 import { useFinance } from "../context/FinanceContext";
 import { analyzeFinance } from "../services/api";
@@ -40,7 +44,18 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 
 export default function Dashboard() {
-  const { userData, analysis: localAnalysis, suggestions: localSuggestions, alerts: localAlerts } = useFinance();
+  const { 
+    userData, 
+    analysis: localAnalysis, 
+    suggestions: localSuggestions, 
+    alerts: localAlerts,
+    searchHistory,
+    addToHistory,
+    clearHistory,
+    watchlist,
+    addToWatchlist,
+    removeFromWatchlist
+  } = useFinance();
   const [apiData, setApiData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -88,6 +103,7 @@ export default function Dashboard() {
     setSelectedIndex(-1);
 
     try {
+      addToHistory(searchVal);
       const res = await fetch("https://prasad-n8n.app.n8n.cloud/webhook/8bf4cde1-f931-4328-8d03-4af2058400ajbjbj", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -180,6 +196,15 @@ export default function Dashboard() {
     }));
   }, [displayData]);
 
+  const stockChartData = useMemo(() => {
+    if (!stockData?.stockData) return [];
+    const basePrice = stockData.stockData.price;
+    return Array.from({ length: 10 }).map((_, i) => ({
+      time: i,
+      price: basePrice + (Math.random() * 100 - 50)
+    }));
+  }, [stockData]);
+
   const financialCards = [
     { name: "Total Revenue", value: `₹${displayData.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-primary", trend: "up", gradient: "from-primary/10 to-transparent" },
     { name: "Total Expenses", value: `₹${displayData.totalExpenses.toLocaleString()}`, change: "+8.4%", icon: CreditCard, color: "text-danger", trend: "up", gradient: "from-danger/10 to-transparent" },
@@ -244,13 +269,39 @@ export default function Dashboard() {
             </div>
 
             <AnimatePresence>
-              {showSuggestions && filteredStocks.length > 0 && (
+              {showSuggestions && (filteredStocks.length > 0 || searchHistory.length > 0) && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   className="absolute top-full left-0 right-0 mt-2 glass-card overflow-hidden z-[60] border-white/10 shadow-2xl"
                 >
+                  {searchHistory.length > 0 && query.length === 0 && (
+                    <div className="p-2 border-b border-white/5">
+                      <div className="flex items-center justify-between px-2 mb-1">
+                        <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Recent Searches</p>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearHistory();
+                          }}
+                          className="text-[8px] font-black text-white/20 hover:text-danger uppercase tracking-widest transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      {searchHistory.map((h, i) => (
+                        <button
+                          key={`hist-${i}`}
+                          onClick={() => handleSearch(h)}
+                          className="w-full text-left px-2 py-2 text-xs font-bold text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all flex items-center gap-2"
+                        >
+                          <History size={12} />
+                          {h}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {filteredStocks.map((stock, i) => (
                     <button
                       key={i}
@@ -260,7 +311,7 @@ export default function Dashboard() {
                         selectedIndex === i ? "bg-primary/20 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      <TrendingUp size={16} className={selectedIndex === i ? "text-white" : "text-primary"} />
+                      <TrendingUpIcon size={16} className={selectedIndex === i ? "text-white" : "text-primary"} />
                       {stock}
                     </button>
                   ))}
@@ -304,7 +355,29 @@ export default function Dashboard() {
 
       {/* AI Stock Search Result Display */}
       <AnimatePresence>
-        {stockData && (
+        {isSearching && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="glass-card p-8 border-white/10 bg-white/5 animate-pulse"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-white/10" />
+              <div className="space-y-2">
+                <div className="h-6 w-48 bg-white/10 rounded" />
+                <div className="h-3 w-24 bg-white/10 rounded" />
+              </div>
+            </div>
+            <div className="h-48 w-full bg-white/10 rounded-2xl mb-8" />
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-2 h-32 bg-white/10 rounded-2xl" />
+              <div className="h-32 bg-white/10 rounded-2xl" />
+            </div>
+          </motion.div>
+        )}
+
+        {stockData && !isSearching && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -325,7 +398,21 @@ export default function Dashboard() {
                     <BrainCircuit size={32} className="text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">{stockData?.company}</h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-black uppercase tracking-tight text-white">{stockData?.company}</h2>
+                      <button 
+                        onClick={() => {
+                          if (watchlist.includes(stockData.company)) {
+                            removeFromWatchlist(stockData.company);
+                          } else {
+                            addToWatchlist(stockData.company);
+                          }
+                        }}
+                        className={`p-2 rounded-lg transition-all ${watchlist.includes(stockData.company) ? 'text-primary bg-primary/10' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
+                      >
+                        <Star size={18} fill={watchlist.includes(stockData.company) ? "currentColor" : "none"} />
+                      </button>
+                    </div>
                     <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">AI Intelligence Report</p>
                   </div>
                 </div>
@@ -339,12 +426,31 @@ export default function Dashboard() {
                     <div className="text-right">
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">24h Change</p>
                       <div className={`flex items-center justify-end gap-1 text-xl font-black ${stockData?.stockData?.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {stockData?.stockData?.change >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                        {stockData?.stockData?.change >= 0 ? <TrendingUpIcon size={20} /> : <TrendingDownIcon size={20} />}
                         {Math.abs(stockData?.stockData?.change)}%
                       </div>
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Real-time Trend Chart */}
+              <div className="h-48 w-full mb-8 bg-white/5 rounded-2xl p-4 border border-white/5">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stockChartData}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                    />
+                    <Area type="monotone" dataKey="price" stroke="#3B82F6" fillOpacity={1} fill="url(#colorPrice)" strokeWidth={3} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
