@@ -12,25 +12,16 @@ import {
   ChevronRight,
   Bell
 } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
 
 export default function Dashboard() {
+  const { analysis, suggestions, alerts } = useFinance();
+
   const financialCards = [
-    { name: "Total Revenue", value: "₹12,45,000", change: "+12.5%", icon: Wallet, color: "text-green-400", trend: "up" },
-    { name: "Total Expenses", value: "₹4,22,000", change: "+8.4%", icon: CreditCard, color: "text-red-400", trend: "up" },
-    { name: "Net Profit", value: "₹8,23,000", change: "+18.2%", icon: TrendingUp, color: "text-indigo-400", trend: "up" },
-    { name: "Estimated Tax", value: "₹1,85,000", change: "Due in 12d", icon: AlertCircle, color: "text-purple-400", trend: "neutral" },
-  ];
-
-  const aiInsights = [
-    { text: "You can save ₹20,000 by claiming Section 80C deductions before March 31st.", type: "success", icon: Zap },
-    { text: "Your operational expenses increased 18% this month. Review cloud server costs.", type: "warning", icon: TrendingDown },
-    { text: "You are nearing the GST threshold of ₹40L. Register now to avoid penalties.", type: "danger", icon: AlertCircle },
-  ];
-
-  const smartAlerts = [
-    { title: "GST Filing Deadline", desc: "Q4 filing due in 5 days", type: "critical", icon: Clock },
-    { title: "Missing Documents", desc: "3 invoices require verification", type: "warning", icon: FileWarning },
-    { title: "High Expense Alert", desc: "Marketing spend exceeded budget by 15%", type: "info", icon: TrendingUp },
+    { name: "Total Revenue", value: `₹${analysis.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-green-400", trend: "up" },
+    { name: "Total Expenses", value: `₹${analysis.totalExpenses.toLocaleString()}`, change: "+8.4%", icon: CreditCard, color: "text-red-400", trend: "up" },
+    { name: "Net Profit", value: `₹${analysis.profit.toLocaleString()}`, change: "+18.2%", icon: TrendingUp, color: "text-indigo-400", trend: "up" },
+    { name: "Estimated Tax", value: `₹${analysis.estimatedTax.toLocaleString()}`, change: "Due in 12d", icon: AlertCircle, color: "text-purple-400", trend: "neutral" },
   ];
 
   return (
@@ -82,12 +73,12 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-bold uppercase tracking-tight">AI Recommendations</h2>
               </div>
               <div className="space-y-4">
-                {aiInsights.map((insight, idx) => (
+                {suggestions.map((text, idx) => (
                   <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                    <div className={`p-2 rounded-lg ${insight.type === 'success' ? 'bg-green-500/10 text-green-400' : insight.type === 'warning' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-red-500/10 text-red-400'}`}>
-                      <insight.icon size={18} />
+                    <div className="p-2 rounded-lg bg-green-500/10 text-green-400">
+                      <Zap size={18} />
                     </div>
-                    <p className="text-sm font-medium leading-relaxed">{insight.text}</p>
+                    <p className="text-sm font-medium leading-relaxed">{text}</p>
                   </div>
                 ))}
               </div>
@@ -101,12 +92,12 @@ export default function Dashboard() {
           <div className="glass-card p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold">Tax Liability Progress</h3>
-              <span className="text-sm font-bold text-purple-400">₹1,85,000 / ₹2,50,000</span>
+              <span className="text-sm font-bold text-purple-400">₹{analysis.estimatedTax.toLocaleString()} / ₹{(analysis.estimatedTax * 1.5).toLocaleString()}</span>
             </div>
             <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]" style={{ width: '74%' }} />
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]" style={{ width: '66%' }} />
             </div>
-            <p className="text-xs subtext">You have utilized 74% of your estimated tax provision for this fiscal year.</p>
+            <p className="text-xs subtext">You have utilized 66% of your estimated tax provision for this fiscal year.</p>
           </div>
         </div>
 
@@ -118,13 +109,12 @@ export default function Dashboard() {
               Smart Alerts
             </h2>
             <div className="space-y-4">
-              {smartAlerts.map((alert, idx) => (
+              {alerts.map((text, idx) => (
                 <div key={idx} className="p-4 rounded-2xl bg-white/5 border-l-4 border-indigo-500 hover:bg-white/10 transition-all cursor-pointer">
                   <div className="flex items-center gap-3 mb-1">
-                    <alert.icon size={16} className="text-indigo-400" />
-                    <h4 className="text-sm font-bold">{alert.title}</h4>
+                    <AlertCircle size={16} className="text-indigo-400" />
+                    <h4 className="text-sm font-bold">{text}</h4>
                   </div>
-                  <p className="text-xs subtext ml-7">{alert.desc}</p>
                 </div>
               ))}
             </div>

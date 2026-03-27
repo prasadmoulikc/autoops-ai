@@ -1,10 +1,13 @@
-import { TrendingUp, TrendingDown, Wallet, CreditCard, PieChart } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, PieChart, DollarSign } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
 
 export default function Financials() {
+  const { analysis } = useFinance();
+
   const stats = [
-    { name: "Total Revenue", value: "$124,500", change: "+12.5%", icon: Wallet, color: "text-green-400" },
-    { name: "Total Expenses", value: "$42,200", change: "-2.4%", icon: CreditCard, color: "text-red-400" },
-    { name: "Net Profit", value: "$82,300", change: "+18.2%", icon: TrendingUp, color: "text-indigo-400" },
+    { name: "Total Revenue", value: `₹${analysis.totalIncome.toLocaleString()}`, change: "+12.5%", icon: Wallet, color: "text-green-400" },
+    { name: "Total Expenses", value: `₹${analysis.totalExpenses.toLocaleString()}`, change: "-2.4%", icon: CreditCard, color: "text-red-400" },
+    { name: "Net Profit", value: `₹${analysis.profit.toLocaleString()}`, change: "+18.2%", icon: TrendingUp, color: "text-indigo-400" },
   ];
 
   return (

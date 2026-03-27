@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { Save, User, Shield, Bell, Moon, Sun, Key } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
 
 export default function Settings() {
+  const { userData, updateUserData } = useFinance();
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [apiKey, setApiKey] = useState("sk-neural-link-********************");
+  const [notifications, setNotifications] = useState<boolean>(userData.notifications ?? true);
+  const [apiKey, setApiKey] = useState(userData.apiKey || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = () => {
+    setIsSaving(true);
+    updateUserData({ apiKey, notifications });
+    setTimeout(() => setIsSaving(false), 1000);
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -16,9 +25,13 @@ export default function Settings() {
           <p className="subtext text-lg font-medium mt-1">Configure your autonomous AI environment.</p>
         </div>
         
-        <button className="premium-button flex items-center gap-3 px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm">
+        <button 
+          onClick={handleSave}
+          disabled={isSaving}
+          className="premium-button flex items-center gap-3 px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm"
+        >
           <Save size={18} />
-          Save Changes
+          {isSaving ? "Saving..." : "Save Changes"}
         </button>
       </header>
 
@@ -31,18 +44,24 @@ export default function Settings() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest subtext">Operator Name</label>
-                <input 
-                  type="text" 
-                  defaultValue="Prasad Gowda" 
-                  className="w-full glass-card bg-white/5 border-white/10 px-6 py-4 rounded-xl focus:outline-none focus:border-indigo-500/50 transition-all"
-                />
+                <label className="text-xs font-bold uppercase tracking-widest subtext">Business Type</label>
+                <select 
+                  value={userData.businessType}
+                  onChange={(e) => updateUserData({ businessType: e.target.value })}
+                  className="w-full glass-card bg-white/5 border-white/10 px-6 py-4 rounded-xl focus:outline-none focus:border-indigo-500/50 transition-all appearance-none"
+                >
+                  <option value="Freelance" className="bg-[#020617]">Freelance</option>
+                  <option value="SaaS" className="bg-[#020617]">SaaS</option>
+                  <option value="Agency" className="bg-[#020617]">Agency</option>
+                  <option value="E-commerce" className="bg-[#020617]">E-commerce</option>
+                </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest subtext">Email Address</label>
+                <label className="text-xs font-bold uppercase tracking-widest subtext">Monthly Income (₹)</label>
                 <input 
-                  type="email" 
-                  defaultValue="prasadgowda908@gmail.com" 
+                  type="number" 
+                  value={userData.income}
+                  onChange={(e) => updateUserData({ income: Number(e.target.value) })}
                   className="w-full glass-card bg-white/5 border-white/10 px-6 py-4 rounded-xl focus:outline-none focus:border-indigo-500/50 transition-all"
                 />
               </div>

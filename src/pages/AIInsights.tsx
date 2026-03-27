@@ -1,11 +1,12 @@
 import { Zap, TrendingUp, TrendingDown, AlertCircle, Target, ArrowUpRight, ArrowDownRight, PieChart } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
 
 export default function AIInsights() {
-  const insights = [
-    { title: "Expense Optimization", desc: "Your cloud server costs increased 18% this month. Consider switching to reserved instances to save ₹12,000/month.", type: "warning", icon: TrendingDown, color: "text-yellow-400" },
-    { title: "Revenue Growth", desc: "New subscription revenue is up 25% this quarter. AI predicts a 30% increase next quarter if current trends continue.", type: "success", icon: TrendingUp, color: "text-green-400" },
-    { title: "GST Threshold Alert", desc: "You are nearing the ₹40L GST threshold. Register now to avoid penalties and enable input tax credit.", type: "danger", icon: AlertCircle, color: "text-red-400" },
-    { title: "Smart Budgeting", desc: "You have ₹45,000 remaining in your marketing budget. AI suggests allocating this to LinkedIn Ads for better ROI.", type: "info", icon: Target, color: "text-indigo-400" },
+  const { analysis, suggestions, alerts } = useFinance();
+
+  const insightItems = [
+    ...suggestions.map(s => ({ title: "Tax Strategy", desc: s, type: "success", icon: Zap, color: "text-green-400" })),
+    ...alerts.map(a => ({ title: "Finance Alert", desc: a, type: "warning", icon: AlertCircle, color: "text-yellow-400" })),
   ];
 
   return (
@@ -29,7 +30,7 @@ export default function AIInsights() {
                 <h2 className="text-2xl font-bold uppercase tracking-tight">Active Recommendations</h2>
               </div>
               <div className="space-y-6">
-                {insights.map((insight, idx) => (
+                {insightItems.map((insight, idx) => (
                   <div key={idx} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all group cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-xl bg-white/5 ${insight.color}`}>
@@ -59,13 +60,13 @@ export default function AIInsights() {
                 <div className="flex items-center justify-between">
                   <span className="subtext">Next Month</span>
                   <div className="flex items-center gap-2 text-green-400 font-bold">
-                    ₹4.5L <ArrowUpRight size={16} />
+                    ₹{(analysis.totalIncome * 1.1).toLocaleString()} <ArrowUpRight size={16} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="subtext">Next Quarter</span>
                   <div className="flex items-center gap-2 text-green-400 font-bold">
-                    ₹14.2L <ArrowUpRight size={16} />
+                    ₹{(analysis.totalIncome * 3.5).toLocaleString()} <ArrowUpRight size={16} />
                   </div>
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mt-4">
@@ -84,7 +85,7 @@ export default function AIInsights() {
                 <div className="flex items-center justify-between">
                   <span className="subtext">Burn Rate</span>
                   <div className="flex items-center gap-2 text-red-400 font-bold">
-                    ₹1.2L/mo <ArrowUpRight size={16} />
+                    ₹{analysis.totalExpenses.toLocaleString()}/mo <ArrowUpRight size={16} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">

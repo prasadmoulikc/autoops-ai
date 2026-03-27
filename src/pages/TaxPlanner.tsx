@@ -1,8 +1,13 @@
 import { FileText, Calendar, AlertCircle, TrendingUp, ShieldCheck, ArrowRight } from "lucide-react";
+import { useFinance } from "../context/FinanceContext";
 
 export default function TaxPlanner() {
+  const { analysis } = useFinance();
+  const optimizedTax = analysis.estimatedTax * 0.8;
+  const savingsPotential = analysis.estimatedTax - optimizedTax;
+
   const taxSavingTips = [
-    { title: "Section 80C", desc: "Invest ₹1.5L in ELSS, PPF, or LIC to save up to ₹46,800 in taxes.", status: "Pending", amount: "₹46,800" },
+    { title: "Section 80C", desc: `Invest ₹1.5L in ELSS, PPF, or LIC to save up to ₹${Math.round(analysis.estimatedTax * 0.2).toLocaleString()} in taxes.`, status: "Pending", amount: `₹${Math.round(analysis.estimatedTax * 0.2).toLocaleString()}` },
     { title: "Health Insurance (80D)", desc: "Claim up to ₹25,000 for self and family insurance premiums.", status: "Completed", amount: "₹25,000" },
     { title: "HRA Exemption", desc: "Submit rent receipts to claim HRA if you live in a rented house.", status: "Action Required", amount: "₹12,000" },
   ];
@@ -81,13 +86,23 @@ export default function TaxPlanner() {
             <div className="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6">
               <TrendingUp size={32} className="text-indigo-400" />
             </div>
-            <h3 className="text-2xl font-bold mb-2">Tax Efficiency</h3>
-            <p className="text-5xl font-black text-white mb-4">84%</p>
-            <p className="text-sm subtext leading-relaxed mb-8">
-              Your tax efficiency is <span className="text-green-400 font-bold">above average</span>. Implement the pending recommendations to reach 95%.
-            </p>
+            <h3 className="text-2xl font-bold mb-2">Tax Overview</h3>
+            <div className="space-y-4 mb-8">
+              <div>
+                <p className="text-xs subtext uppercase tracking-widest mb-1">Current Tax</p>
+                <p className="text-3xl font-black text-white">₹{analysis.estimatedTax.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs subtext uppercase tracking-widest mb-1">Optimized Tax</p>
+                <p className="text-3xl font-black text-green-400">₹{optimizedTax.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs subtext uppercase tracking-widest mb-1">Savings Potential</p>
+                <p className="text-3xl font-black text-indigo-400">₹{savingsPotential.toLocaleString()}</p>
+              </div>
+            </div>
             <button className="premium-button w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm">
-              Generate Report
+              Apply Optimization
             </button>
           </div>
 
