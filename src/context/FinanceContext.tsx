@@ -29,14 +29,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [userData, setUserData] = useState<UserData>(() => {
     try {
       const saved = localStorage.getItem("userData");
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return DEMO_DATA;
+      const parsed = JSON.parse(saved);
+      return { ...DEMO_DATA, ...parsed };
     } catch (error) {
       console.error("Failed to parse userData from localStorage:", error);
-      return null;
+      return DEMO_DATA;
     }
   });
 
-  const [isFirstTime, setIsFirstTime] = useState(!userData);
+  const [isFirstTime, setIsFirstTime] = useState(() => !localStorage.getItem("userData"));
 
   const activeData = useMemo(() => {
     const base = userData || DEMO_DATA;
